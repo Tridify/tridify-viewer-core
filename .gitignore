@@ -56,6 +56,16 @@ typings/
 
 # dotenv environment variables file
 .env
+.env.local
+.env.*.local
 
-# next.js build output
+# Firebase files
+firebase.json
+.firebaserc
+/.firebase
+
+# build output
+build/
+dist/
+umd/
 .next
