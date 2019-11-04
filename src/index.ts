@@ -1,6 +1,16 @@
-import { ArcRotateCamera, SceneLoader, AbstractMesh, StandardMaterial, PBRMaterial, Mesh  } from '@babylonjs/core';
-import { Scene } from '@babylonjs/core/scene';
-import { Vector3 } from "@babylonjs/core/Maths/math";
+import '@babylonjs/core/Engines/engine';
+import { 
+  ArcRotateCamera, 
+  Scene,
+  SceneLoader,
+  StandardMaterial,
+  PBRMaterial,
+  AbstractMesh,
+  Mesh,
+  Vector3
+ } from '@babylonjs/core';
+
+import "@babylonjs/loaders/glTF"
 
 
 /**
@@ -46,9 +56,6 @@ export function GetMeshesWithinAverageBoxCenterDeviation(meshes: AbstractMesh[])
     return meshesWithinDeviation.length > 0 ? meshesWithinDeviation : meshes;
 }
 
-
-
-
 export async function loadModel(scene: Scene, uid: string) {
     const myUrls = await fetchGltfUrls(uid);
     await myUrls.forEach(async (url: string) => {
@@ -72,7 +79,7 @@ export async function loadModel(scene: Scene, uid: string) {
         if(mesh.material instanceof PBRMaterial) {
           pbr.albedoColor = mesh.material.albedoColor;
           pbr.useAlphaFromAlbedoTexture = true;
-          pbr.metallic = 0.5;
+          pbr.metallic = 0;
         }
   
         if(mesh instanceof Mesh) {
