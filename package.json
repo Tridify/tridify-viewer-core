@@ -1,0 +1,30 @@
+{
+  "name": "@tridify/babylonjs-utilities",
+  "version": "0.0.0",
+  "description": "Babylonjs utilities that help working with Tridify IFC files",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tridify/babylonjs-utilities.git"
+  },
+  "author": "“tridify” (https://www.tridify.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Tridify/babylonjs-utilities/issues"
+  },
+  "homepage": "https://github.com/Tridify/babylonjs-utilities#readme",
+  "dependencies": {
+    "@babylonjs/core": "^4.0.3"
+  },
+  "devDependencies": {
+    "typescript": "^3.6.4"
+  }
+}
