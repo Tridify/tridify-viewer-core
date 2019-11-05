@@ -10,8 +10,7 @@ import {
   Vector3
  } from '@babylonjs/core';
 
-import "@babylonjs/loaders/glTF"
-
+import "@babylonjs/loaders/glTF/2.0"
 
 /**
  * Frame scene. First it calculates the radius of the entire scene.
