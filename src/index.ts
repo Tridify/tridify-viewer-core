@@ -56,6 +56,11 @@ export function GetMeshesWithinAverageBoxCenterDeviation(meshes: AbstractMesh[])
     return meshesWithinDeviation.length > 0 ? meshesWithinDeviation : meshes;
 }
 
+/**
+ * Load model based from a Tridify model hash
+ * @param {Scene} scene - The Babylon scene to import model into.
+ * @param {string} uid - The Tridify model hash.
+ */
 export async function loadModel(scene: Scene, uid: string) {
     const myUrls = await fetchGltfUrls(uid);
     await myUrls.forEach(async (url: string) => {
@@ -65,7 +70,12 @@ export async function loadModel(scene: Scene, uid: string) {
   
     })
   }
-  
+
+  /**
+ * Load model based from a Tridify model hash
+ * @param {Scene} scene - The current Babylon scene
+ * @param {Array<AbstractMesh>} uid - An array of meshes to apply PBR materials to
+ */
   async function applyPbrMaterials(scene: Scene, meshes: Array<AbstractMesh>) {
     meshes.forEach((mesh: AbstractMesh) => {
       if (mesh.material) {
@@ -103,8 +113,12 @@ export async function loadModel(scene: Scene, uid: string) {
     ));
   }
 
-
-  export function createOrbitCamera(targetScene: Scene) {
+  /**
+ * Add a ArcRotateCamera to the scene with IFC based settings
+ * @param {Scene} scene - The current Babylon scene
+ * @returns {ArcRotateCamera} - a Babylon ArcRotateCamera
+ */
+  export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
     const camera = new ArcRotateCamera('ArcRotateCamera', 0, -Math.PI / 2, 0, Vector3.Zero(), targetScene, true);
     let cameraRadius = 0;
     camera.wheelDeltaPercentage = 0.005;

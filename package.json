@@ -1,6 +1,6 @@
 {
   "name": "@tridify/babylonjs-utilities",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Babylonjs utilities that help working with Tridify IFC files",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "tsc & tsc --outDir umd --target es6 --module umd"
   },
   "repository": {
     "type": "git",
