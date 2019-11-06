@@ -1,6 +1,6 @@
 {
   "name": "@tridify/babylonjs-utilities",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Babylonjs utilities that help working with Tridify IFC files",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
