@@ -27,6 +27,6 @@
   },
   "devDependencies": {
     "tslib": "^1.10.0",
-    "typescript": "^3.6.4"
+    "typescript": "^3.7.3"
   }
 }
