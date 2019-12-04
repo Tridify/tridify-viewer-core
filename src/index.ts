@@ -19,17 +19,20 @@ import "@babylonjs/loaders/glTF/2.0"
  * Then it moves the camera so that the model is in 45 degree angle from the model based on architecture standards.
  * Then it sets camera radius
  * @param {Scene} scene - The Babylon scene to frame.
- * @param {ArcRotateCamera} orbitCamera - The orbit camera to frame.
+ * @param {ArcRotateCamera} orbitCamera - Optional - The orbit camera to frame. If missing, use scene active camera
  * @param {AbstractMesh[]} meshesToFrame - Optional - meshes to use for framing. If missing use all in scene.
  * @param {number} minOrbitZoom - Optional - the minimum distance that the camera can zoom to to the center of the model. If missing, third of diameter.
  */
-export function frameScene(scene: Scene|any, orbitCamera: ArcRotateCamera, meshesToFrame?: AbstractMesh[], minOrbitZoom?: number) {
-    if (scene === undefined) {
-        throw Error('Frame scene: scene is undefined!');
+export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], minOrbitZoom?: number) {
+
+    if(orbitCamera === undefined) {
+      try {
+        orbitCamera = scene.activeCamera as ArcRotateCamera;
+      } catch {
+        throw Error('Frame scene: active scene camera is not an ArcRotateCamera');
+      }
     }
-    if (orbitCamera === undefined) {
-        throw Error('Frame scene: orbitCamera is undefined!');
-    }
+
     const r = getMaxBoundingDistanceFromOrigo(meshesToFrame !== undefined ? meshesToFrame : scene.meshes);
     const d = r / (Math.sin(orbitCamera.fov / 2));
     orbitCamera.setTarget(Vector3.Zero());
