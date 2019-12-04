@@ -47,14 +47,6 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
         .map(x => x.getBoundingInfo().boundingSphere.radius + Vector3.Distance(x.absolutePosition, Vector3.Zero())));
 }
 
-export function GetMeshesWithinAverageBoxCenterDeviation(meshes: AbstractMesh[]) {
-    const boundingBoxCenters = meshes.map(x => ({center: x.getBoundingInfo().boundingBox.centerWorld, mesh: x}));
-    const averagePosition = boundingBoxCenters.reduce((a, b) => a.add(b.center), Vector3.Zero()).divide(new Vector3(meshes.length, meshes.length, meshes.length));
-    const averageDeviation = boundingBoxCenters.reduce((a, b) =>  a + Vector3.Distance(averagePosition, b.center) , 0) / meshes.length;
-    const meshesWithinDeviation = boundingBoxCenters.filter(x => Vector3.Distance(averagePosition, x.center) <= averageDeviation).map(x => x.mesh);
-    return meshesWithinDeviation.length > 0 ? meshesWithinDeviation : meshes;
-}
-
 /**
  * Load model based from a Tridify model hash
  * @param {Scene} scene - The Babylon scene to import model into.
@@ -69,6 +61,48 @@ export async function loadModel(scene: Scene, uid: string) {
   
     })
   }
+
+   /**
+   * Center the imported meshes based on a standard deviation distance from each other
+   * @param {AbstractMesh[]} meshesToCenter - An array of meshes to center by
+   * @param {AbstractMesh[]} allMeshes - All meshes
+   * @returns {Vector3} - the vector to offset all meshes by
+   */
+  export function centerModel(meshesToCenter: AbstractMesh[], allMeshes: AbstractMesh[]): Vector3 {
+    const meshesWithinDeviation = GetMeshesWithinAverageBoxCenterDeviation(meshesToCenter);
+    const offset = meshesWithinDeviation.map(x => x.getBoundingInfo().boundingBox.centerWorld)
+      .reduce((a, b) => a.add(b))
+      .divide(new Vector3(meshesWithinDeviation.length, meshesWithinDeviation.length, meshesWithinDeviation.length));
+    allMeshes.forEach(x => x.setAbsolutePosition(x.absolutePosition.subtract(offset)));
+    return offset;
+  }
+
+  /**
+ * Add a ArcRotateCamera to the scene with IFC based settings
+ * @param {Scene} scene - The current Babylon scene
+ * @returns {ArcRotateCamera} - a Babylon ArcRotateCamera
+ */
+  export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
+    const camera = new ArcRotateCamera('ArcRotateCamera', 0, -Math.PI / 2, 0, Vector3.Zero(), targetScene, true);
+    let cameraRadius = 0;
+    camera.wheelDeltaPercentage = 0.005;
+    targetScene.onBeforeRenderObservable.add(() => {
+      if (cameraRadius === camera.radius) return;
+      cameraRadius = camera.radius;
+      camera.minZ = cameraRadius / 10;
+    });
+    camera.lowerRadiusLimit = 1;
+    camera.panningSensibility = 100;
+    return camera;
+  }
+
+  function GetMeshesWithinAverageBoxCenterDeviation(meshes: AbstractMesh[]) {
+    const boundingBoxCenters = meshes.map(x => ({center: x.getBoundingInfo().boundingBox.centerWorld, mesh: x}));
+    const averagePosition = boundingBoxCenters.reduce((a, b) => a.add(b.center), Vector3.Zero()).divide(new Vector3(meshes.length, meshes.length, meshes.length));
+    const averageDeviation = boundingBoxCenters.reduce((a, b) =>  a + Vector3.Distance(averagePosition, b.center) , 0) / meshes.length;
+    const meshesWithinDeviation = boundingBoxCenters.filter(x => Vector3.Distance(averagePosition, x.center) <= averageDeviation).map(x => x.mesh);
+    return meshesWithinDeviation.length > 0 ? meshesWithinDeviation : meshes;
+  } 
 
   /**
  * Load model based from a Tridify model hash
@@ -110,23 +144,4 @@ export async function loadModel(scene: Scene, uid: string) {
     return await response.json().then((data: any) => (
       data.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')).filter(gltfWithoutIfcSpaces)
     ));
-  }
-
-  /**
- * Add a ArcRotateCamera to the scene with IFC based settings
- * @param {Scene} scene - The current Babylon scene
- * @returns {ArcRotateCamera} - a Babylon ArcRotateCamera
- */
-  export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
-    const camera = new ArcRotateCamera('ArcRotateCamera', 0, -Math.PI / 2, 0, Vector3.Zero(), targetScene, true);
-    let cameraRadius = 0;
-    camera.wheelDeltaPercentage = 0.005;
-    targetScene.onBeforeRenderObservable.add(() => {
-      if (cameraRadius === camera.radius) return;
-      cameraRadius = camera.radius;
-      camera.minZ = cameraRadius / 10;
-    });
-    camera.lowerRadiusLimit = 1;
-    camera.panningSensibility = 100;
-    return camera;
   }
