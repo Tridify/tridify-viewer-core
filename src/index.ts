@@ -16,24 +16,26 @@ import "@babylonjs/loaders/glTF/2.0"
  * Frame scene. First it calculates the radius of the entire scene.
  * Then it calculates this based on camera fov so that the entire building is visible in camera view.
  * Then it sets camera target to scene origin.
- * Then it moves the camera so that the model is in 45 degree angle from the model based on architure standards.
+ * Then it moves the camera so that the model is in 45 degree angle from the model based on architecture standards.
  * Then it sets camera radius
  * @param {Scene} scene - The Babylon scene to frame.
  * @param {ArcRotateCamera} orbitCamera - The orbit camera to frame.
+ * @param {AbstractMesh[]} meshesToFrame - Optional - meshes to use for framing. If missing use all in scene.
+ * @param {number} minOrbitZoom - Optional - the minimum distance that the camera can zoom to to the center of the model. If missing, third of diameter.
  */
-export function frameScene(scene: Scene|any, orbitCamera: ArcRotateCamera) {
+export function frameScene(scene: Scene|any, orbitCamera: ArcRotateCamera, meshesToFrame?: AbstractMesh[], minOrbitZoom?: number) {
     if (scene === undefined) {
         throw Error('Frame scene: scene is undefined!');
     }
     if (orbitCamera === undefined) {
         throw Error('Frame scene: orbitCamera is undefined!');
     }
-    const r = getMaxBoundingDistanceFromOrigo(scene.meshes);
+    const r = getMaxBoundingDistanceFromOrigo(meshesToFrame !== undefined ? meshesToFrame : scene.meshes);
     const d = r / (Math.sin(orbitCamera.fov / 2));
     orbitCamera.setTarget(Vector3.Zero());
     orbitCamera.setPosition(new Vector3(-1, 0.9, -1));
     orbitCamera.radius = d;
-    orbitCamera.lowerRadiusLimit = 1;
+    orbitCamera.lowerRadiusLimit = minOrbitZoom !== undefined ? minOrbitZoom : (d / 3);
 }
 
 /**
