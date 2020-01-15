@@ -140,13 +140,40 @@ export async function loadModel(scene: Scene, uid: string) {
   }
   
   async function fetchGltfUrls(tridifyIfcUID: string) {
-    const gltfWithoutIfcSpaces = (url: string) => {
-      var baseUrl = url.split('?')[0]
-      return baseUrl.endsWith('.gltf') && !baseUrl.endsWith('IfcSpace.gltf')
-    }
+    const baseUrl : string= 'https://ws.tridify.com/api';
+    //old conversion
+    const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
+      .then(response => response.json())
+      .then((responseData) => {
+          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')).filter(x => !x.includes('IfcSpace.gltf')) as string[];
+          return gltfUrls;
+      });
+    return fetch(`${baseUrl}/shared/published-links/${tridifyIfcUID}`, { mode: 'cors' })
+      .then(response => {
+        if (response.ok)
+          return response.json()
+            .then((responseData: SharedConversionsDTO) => {
+              return responseData.Conversions
+                .flatMap(x => x.Files)
+                .filter(x => x.Format === '.gltf')
+                .map(x => x.Url)
+                .filter(x => !x.includes("IfcSpace"));
+            });
+        return legacyFetch();
+      }).catch(x => legacyFetch());
+  }
+
+  interface SharedConversionsDTO {
+    Conversions: SharedConversionDTO[];
+  }
   
-    const response = await fetch(`https://ws.tridify.com/api/shared/conversion/${tridifyIfcUID}`);
-    return await response.json().then((data: any) => (
-      data.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')).filter(gltfWithoutIfcSpaces)
-    ));
+  interface SharedConversionDTO {
+    Hash: string;
+    Files: SharedConversionFileDTO[];
+  }
+  
+  interface SharedConversionFileDTO {
+    Url: string;
+    Type: string;
+    Format: string;
   }
