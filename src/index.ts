@@ -145,7 +145,7 @@ export async function loadModel(scene: Scene, uid: string) {
     const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
       .then(response => response.json())
       .then((responseData) => {
-          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')) as string[];
+          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')).filter(x => !x.includes('IfcSpace.gltf')) as string[];
           return gltfUrls;
       });
     return fetch(`${baseUrl}/shared/published-links/${tridifyIfcUID}`, { mode: 'cors' })
@@ -156,7 +156,8 @@ export async function loadModel(scene: Scene, uid: string) {
               return responseData.Conversions
                 .flatMap(x => x.Files)
                 .filter(x => x.Format === '.gltf')
-                .map(x => x.Url);
+                .map(x => x.Url)
+                .filter(x => !x.includes("IfcSpace"));
             });
         return legacyFetch();
       }).catch(x => legacyFetch());
