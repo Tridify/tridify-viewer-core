@@ -18,12 +18,13 @@ import "@babylonjs/loaders/glTF/2.0"
  * Then it sets camera target to scene origin.
  * Then it moves the camera so that the model is in 45 degree angle from the model based on architecture standards.
  * Then it sets camera radius
+ * Then creates collision box if meshToFrame is give
  * @param {Scene} scene - The Babylon scene to frame.
  * @param {ArcRotateCamera} orbitCamera - Optional - The orbit camera to frame. If missing, use scene active camera
  * @param {AbstractMesh[]} meshesToFrame - Optional - meshes to use for framing. If missing use all in scene.
  * @param {number} minOrbitZoom - Optional - the minimum distance that the camera can zoom to to the center of the model. If missing, third of diameter.
  */
-export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], minOrbitZoom?: number) {
+export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], collisionMesh?: AbstractMesh, minOrbitZoom?: number) {
 
     if(orbitCamera === undefined) {
       try {
@@ -33,12 +34,22 @@ export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesTo
       }
     }
 
-    const r = getMaxBoundingDistanceFromOrigo(meshesToFrame !== undefined ? meshesToFrame : scene.meshes);
-    const d = r / (Math.sin(orbitCamera.fov / 2));
-    orbitCamera.setTarget(Vector3.Zero());
-    orbitCamera.setPosition(new Vector3(-1, 0.9, -1));
-    orbitCamera.radius = d;
+  const r = getMaxBoundingDistanceFromOrigo(meshesToFrame !== undefined ? meshesToFrame : scene.meshes);
+  const d = r / (Math.sin(orbitCamera.fov / 2));
+  orbitCamera.setTarget(Vector3.Zero());
+  orbitCamera.setPosition(new Vector3(-1, 0.9, -1));
+  orbitCamera.radius = d;
+
+  if (collisionMesh) {
+    orbitCamera.collisionRadius = new Vector3(8, 8, 8);
+    collisionMesh.checkCollisions = true;
+    collisionMesh.scaling = new Vector3(2, 2, 2);
+    collisionMesh.isPickable = false;
+    collisionMesh.isVisible = false;
+    scene.collisionsEnabled = true;
+  } else {
     orbitCamera.lowerRadiusLimit = minOrbitZoom !== undefined ? minOrbitZoom : (d / 3);
+  }
 }
 
 /**
