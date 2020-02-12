@@ -26,19 +26,19 @@ import "@babylonjs/loaders/glTF/2.0"
  */
 export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], collisionMesh?: AbstractMesh, minOrbitZoom?: number) {
 
-    if(orbitCamera === undefined) {
-      try {
-        orbitCamera = scene.activeCamera as ArcRotateCamera;
-      } catch {
-        throw Error('Frame scene: active scene camera is not an ArcRotateCamera');
-      }
+  if(orbitCamera === undefined) {
+    try {
+      orbitCamera = scene.activeCamera as ArcRotateCamera;
+    } catch {
+      throw Error('Frame scene: active scene camera is not an ArcRotateCamera');
     }
+  }
 
   const r = getMaxBoundingDistanceFromOrigo(meshesToFrame !== undefined ? meshesToFrame : scene.meshes);
   const d = r / (Math.sin(orbitCamera.fov / 2));
+  const divisor = 1.5;
   orbitCamera.setTarget(Vector3.Zero());
-  orbitCamera.setPosition(new Vector3(-1, 0.9, -1));
-  orbitCamera.radius = d;
+  orbitCamera.setPosition(new Vector3(-1*d/divisor, 0.9*d/divisor, -1*d/divisor));
 
   if (collisionMesh) {
     orbitCamera.collisionRadius = new Vector3(8, 8, 8);
@@ -156,7 +156,7 @@ export async function loadModel(scene: Scene, uid: string) {
     const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
       .then(response => response.json())
       .then((responseData) => {
-          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')).filter(x => !x.includes('IfcSpace.gltf')) as string[];
+          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')).filter((x: any)=> !x.includes('IfcSpace.gltf')) as string[];
           return gltfUrls;
       });
     return fetch(`${baseUrl}/shared/published-links/${tridifyIfcUID}`, { mode: 'cors' })
