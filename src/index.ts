@@ -188,3 +188,16 @@ export async function loadModel(scene: Scene, uid: string) {
     Type: string;
     Format: string;
   }
+
+  /**
+ * Load Ifc data object
+ * @param {string} uid - conversionID.
+ * @param {string} property - Optional - property to load properties under ifc object.
+ */
+export async function loadIfc(uid: string, property: string = "") {
+  return fetch(`https://ws.tridify.com/api/shared/conversion/${uid}/ifc/${property}`, { mode: 'cors'})
+    .then(response => {
+      if(!response.ok) throw new Error("ifc not found");
+      return response.json();
+    });
+}
