@@ -13,6 +13,7 @@
       "es6",
       "es2015.collection",
       "es2015.promise",
+      "ES2019.Array",
       "scripthost",
       "dom.iterable",
       "dom",

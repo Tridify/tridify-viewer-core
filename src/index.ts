@@ -69,14 +69,18 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
  * @param {string} uid - The Tridify model hash.
  */
 export async function loadModel(scene: Scene, uid: string) {
-    const myUrls = await fetchGltfUrls(uid);
-    await myUrls.forEach(async (url: string) => {
-      await SceneLoader.ImportMeshAsync("", "", url, scene, null, '.gltf').then((result: any) => {
-        applyPbrMaterials(scene, result.meshes)
+  const myUrls = await fetchGltfUrls(uid);
+  if(myUrls) {
+    await myUrls.forEach(async (x) => {
+      await SceneLoader.ImportMeshAsync("", "", x.Url, scene, null, '.gltf').then((result: any) => {
+        const meshes: AbstractMesh[] = result.meshes;
+        applyPbrMaterials(scene, meshes);
+        meshes.forEach(mesh => mesh.ifcType = x.Type);
       });
-  
-    })
+    });
   }
+  
+}
 
    /**
    * Center the imported meshes based on a standard deviation distance from each other
@@ -150,25 +154,35 @@ export async function loadModel(scene: Scene, uid: string) {
     return meshes;
   }
   
-  async function fetchGltfUrls(tridifyIfcUID: string) {
+  async function fetchGltfUrls(tridifyIfcUID: string) : Promise<SharedConversionFileDTO[] | undefined> {
     const baseUrl : string= 'https://ws.tridify.com/api';
     //old conversion
     const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
       .then(response => response.json())
       .then((responseData) => {
-          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')).filter((x: any)=> !x.includes('IfcSpace.gltf')) as string[];
-          return gltfUrls;
+          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')) as string[];
+          const newGltfUrlFiles: SharedConversionFileDTO[] = [];
+          gltfUrls.forEach(x => {
+            const parsedUrl: string[] = x.split('.gltf')[0].split('_');
+            const part = parsedUrl.pop();
+            const UrlType = part?.includes('part') ? parsedUrl.pop() as string : part as string;
+            const UrlStorey = parsedUrl.pop() as string;
+            const UrlStoreyLevel = parsedUrl.pop() as string;
+            const GltfUrlFile: SharedConversionFileDTO = {Url: x, Type: UrlType, Format: '.gltf', Storey: !UrlStoreyLevel.includes('Tridify') ? UrlStoreyLevel + UrlStorey : UrlStorey};
+            newGltfUrlFiles.push(GltfUrlFile);
+          });
+          return newGltfUrlFiles;
       });
     return fetch(`${baseUrl}/shared/published-links/${tridifyIfcUID}`, { mode: 'cors' })
       .then(response => {
         if (response.ok)
           return response.json()
             .then((responseData: SharedConversionsDTO) => {
-              return responseData.Conversions
+              const files = responseData.Conversions
                 .flatMap(x => x.Files)
                 .filter(x => x.Format === '.gltf')
-                .map(x => x.Url)
-                .filter(x => !x.includes("IfcSpace"));
+                .map(x => x) as SharedConversionFileDTO[];
+              return files;
             });
         return legacyFetch();
       }).catch(x => legacyFetch());
@@ -187,6 +201,13 @@ export async function loadModel(scene: Scene, uid: string) {
     Url: string;
     Type: string;
     Format: string;
+    Storey: string;
+  }
+
+  declare module '@babylonjs/core/Meshes/abstractMesh.js' {
+    interface AbstractMesh {
+      ifcType: string;
+    }
   }
 
   /**
@@ -201,3 +222,6 @@ export async function loadIfc(uid: string, property: string = "") {
       return response.json();
     });
 }
+
+
+
