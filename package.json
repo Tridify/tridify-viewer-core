@@ -22,11 +22,11 @@
   },
   "homepage": "https://github.com/Tridify/babylonjs-utilities#readme",
   "dependencies": {
-    "@babylonjs/core": "^4.0.3",
-    "@babylonjs/loaders": "^4.0.3"
+    "@babylonjs/core": "^4.1.0",
+    "@babylonjs/loaders": "^4.1.0"
   },
   "devDependencies": {
     "tslib": "^1.10.0",
-    "typescript": "^3.7.3"
+    "typescript": "^3.9.7"
   }
 }
