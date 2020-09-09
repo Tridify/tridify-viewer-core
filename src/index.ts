@@ -68,10 +68,10 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
  * @param {Scene} scene - The Babylon scene to import model into.
  * @param {string} uid - The Tridify model hash.
  */
-export async function loadModel(scene: Scene, uid: string) {
+export async function loadModel(scene: Scene, uid: string) : Promise<string[]> {
   const myUrls = await fetchGltfUrls(uid);
-  if(myUrls) {
-    await myUrls.forEach(async (x) => {
+  if(myUrls && myUrls.files) {
+    await myUrls.files.forEach(async (x) => {
       await SceneLoader.ImportMeshAsync("", "", x.Url, scene, null, '.gltf').then((result: any) => {
         const meshes: AbstractMesh[] = result.meshes;
         applyPbrMaterials(scene, meshes);
@@ -79,7 +79,7 @@ export async function loadModel(scene: Scene, uid: string) {
       });
     });
   }
-  
+  return myUrls.hash;
 }
 
    /**
@@ -154,7 +154,7 @@ export async function loadModel(scene: Scene, uid: string) {
     return meshes;
   }
   
-  async function fetchGltfUrls(tridifyIfcUID: string) : Promise<SharedConversionFileDTO[] | undefined> {
+  async function fetchGltfUrls(tridifyIfcUID: string) : Promise<{files: SharedConversionFileDTO[], hash: string[]}> {
     const baseUrl : string= 'https://ws.tridify.com/api';
     //old conversion
     const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
@@ -171,9 +171,9 @@ export async function loadModel(scene: Scene, uid: string) {
             const GltfUrlFile: SharedConversionFileDTO = {Url: x, Type: UrlType, Format: '.gltf', Storey: !UrlStoreyLevel.includes('Tridify') ? UrlStoreyLevel + UrlStorey : UrlStorey};
             newGltfUrlFiles.push(GltfUrlFile);
           });
-          return newGltfUrlFiles;
+          return {files:newGltfUrlFiles, hash: [tridifyIfcUID]};
       });
-    return fetch(`${baseUrl}/shared/published-links/${tridifyIfcUID}`, { mode: 'cors' })
+    return fetch(`${baseUrl}/v1/published-links/${tridifyIfcUID}`, { mode: 'cors' })
       .then(response => {
         if (response.ok)
           return response.json()
@@ -182,7 +182,7 @@ export async function loadModel(scene: Scene, uid: string) {
                 .flatMap(x => x.Files)
                 .filter(x => x.Format === '.gltf')
                 .map(x => x) as SharedConversionFileDTO[];
-              return files;
+              return {files: files, hash: responseData.Conversions.flatMap(x => x.Hash)};
             });
         return legacyFetch();
       }).catch(x => legacyFetch());
@@ -215,13 +215,18 @@ export async function loadModel(scene: Scene, uid: string) {
  * @param {string} uid - conversionID.
  * @param {string} property - Optional - property to load properties under ifc object.
  */
-export async function loadIfc(uid: string, property: string = "") {
-  return fetch(`https://ws.tridify.com/api/shared/conversion/${uid}/ifc/${property}`, { mode: 'cors'})
-    .then(response => {
-      if(!response.ok) throw new Error("ifc not found");
-      return response.json();
-    });
-}
+  async function loadIfc(uids: string[], property: string = "") {
+    const baseUrl= 'https://ws.tridify.com/api';
+    const promiseArray = uids.map(x => fetch(`${baseUrl}/shared/conversion/${x}/ifc/${property}`, { mode: 'cors'})
+      .then(response => {
+        return response.json();
+      }).catch(() => {
+        console.log('Ifc not found ', x);
+        return [];
+      })
+    );
+    return Promise.all(promiseArray);
+  }
 
 
 
