@@ -208,32 +208,10 @@ export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
       if (mesh instanceof Mesh) {
         mesh.material = pbr
       }
-    }
   });
 
   return meshes;
 }
-
-async function fetchGltfUrls(tridifyIfcUID: string): Promise<{ files: SharedConversionFileDTO[], hash: string[] }> {
-  const baseUrl: string = 'https://ws.tridify.com/api';
-  //old conversion
-  const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
-    .then(response => response.json())
-    .then((responseData) => {
-      const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')) as string[];
-      const newGltfUrlFiles: SharedConversionFileDTO[] = [];
-      gltfUrls.forEach(x => {
-        const parsedUrl: string[] = x.split('.gltf')[0].split('_');
-        const part = parsedUrl.pop();
-        const UrlType = part?.includes('part') ? parsedUrl.pop() as string : part as string;
-        const UrlStorey = parsedUrl.pop() as string;
-        const UrlStoreyLevel = parsedUrl.pop() as string;
-        const GltfUrlFile: SharedConversionFileDTO = { Url: x, Type: UrlType, Format: '.gltf', Storey: !UrlStoreyLevel.includes('Tridify') ? UrlStoreyLevel + UrlStorey : UrlStorey };
-        newGltfUrlFiles.push(GltfUrlFile);
-      });
-      return { files: newGltfUrlFiles, hash: [tridifyIfcUID] };
-    });
-  }
 
   interface SharedConversionsDTO {
     Conversions: SharedConversionDTO[];
@@ -299,50 +277,3 @@ async function fetchGltfUrls(tridifyIfcUID: string): Promise<{ files: SharedConv
     endIndex: number;
   }
 
-
-
-
-
-// NOT SUPPORTED YET
-
-
-  /**
- * fetch Ifc data of object
- * @param {string} uid - conversionID.
- * @param {string} property - Optional - property to load properties under ifc object.
- */
-  async function loadIfc(uids: string[], property: string = "") {
-    const baseUrl= 'https://ws.tridify.com/api';
-    const promiseArray = uids.map(x => fetch(`${baseUrl}/shared/conversion/${x}/ifc/${property}`, { mode: 'cors'})
-      .then(response => {
-        return response.json();
-      }).catch(() => {
-        console.log('Ifc not found ', x);
-        return [];
-      })
-    );
-    return Promise.all(promiseArray);
-  }
-}
-
-/**
-* Load Ifc data object
-* @param {string} uid - conversionID.
-* @param {string} property - Optional - property to load properties under ifc object.
-*/
-export async function loadIfc(uids: string[], property: string = "") {
-  const baseUrl = 'https://ws.tridify.com/api';
-  const promiseArray = uids.map(x => fetch(`${baseUrl}/shared/conversion/${x}/ifc/${property}`, { mode: 'cors' })
-    .then(response => {
-      return response.json();
-    }).catch(() => {
-      console.log('Ifc not found ', x);
-      return [];
-    })
-  );
-  return Promise.all(promiseArray);
-}
-
-
-
- 
