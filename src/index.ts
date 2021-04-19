@@ -76,7 +76,7 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
 
   let extras: { centeringOffset: any, ifc: [] } = { centeringOffset: [], ifc: [] };
 
-  scene.transformNodes.map((node) => {
+  scene.transformNodes.map((node: any) => {
     if (node.metadata && node.metadata.gltf && node.metadata.gltf.extras) {
       extras = node.metadata.gltf.extras;
     }
@@ -92,7 +92,7 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
     modelOffset = Vector3.Zero();
   }
 
-  scene.meshes.map(mesh => {
+  scene.meshes.map((mesh: any) => {
     if (mesh.name !== 'navigationMesh') {
       mesh.setParent(mergedMeshesNode);
     }
@@ -191,7 +191,7 @@ export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
         const newMat = StandardMaterial.Parse(serialized, scene, '')
         const meshmat = mesh.material as PBRMaterial
         newMat.diffuseColor = meshmat.albedoColor;
-        const pbr = PBRMaterial.Parse(serialized, scene, '')
+        const pbr: any = PBRMaterial.Parse(serialized, scene, '')
         pbr.twoSidedLighting = true;
   
         if(mesh.material instanceof PBRMaterial) {
@@ -203,10 +203,6 @@ export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
         if(mesh instanceof Mesh) {
           mesh.material = pbr
         }
-      }
-
-      if (mesh instanceof Mesh) {
-        mesh.material = pbr
       }
   });
 
