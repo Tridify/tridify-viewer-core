@@ -1,6 +1,6 @@
 import '@babylonjs/core/Engines/engine';
-import { 
-  ArcRotateCamera, 
+import {
+  ArcRotateCamera,
   Scene,
   SceneLoader,
   StandardMaterial,
@@ -9,7 +9,7 @@ import {
   Mesh,
   TransformNode,
   Vector3
- } from '@babylonjs/core';
+} from '@babylonjs/core';
 
 /**
  * Frame scene. First it calculates the radius of the entire scene.
@@ -25,7 +25,7 @@ import {
  */
 export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], collisionMesh?: AbstractMesh, minOrbitZoom?: number) {
 
-  if(orbitCamera === undefined) {
+  if (orbitCamera === undefined) {
     try {
       orbitCamera = scene.activeCamera as ArcRotateCamera;
     } catch {
@@ -37,7 +37,7 @@ export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesTo
   const d = r / (Math.sin(orbitCamera.fov / 2));
   const divisor = 1.5;
   orbitCamera.setTarget(Vector3.Zero());
-  orbitCamera.setPosition(new Vector3(-1*d/divisor, 0.9*d/divisor, -1*d/divisor));
+  orbitCamera.setPosition(new Vector3(-1 * d / divisor, 0.9 * d / divisor, -1 * d / divisor));
 
   if (collisionMesh) {
     orbitCamera.collisionRadius = new Vector3(8, 8, 8);
@@ -58,8 +58,8 @@ export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesTo
  * @returns {number} - The bounding distance from origo.
  */
 export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number {
-    return Math.max(...GetMeshesWithinAverageBoxCenterDeviation(meshes)
-        .map(x => x.getBoundingInfo().boundingSphere.radius + Vector3.Distance(x.absolutePosition, Vector3.Zero())));
+  return Math.max(...GetMeshesWithinAverageBoxCenterDeviation(meshes)
+    .map(x => x.getBoundingInfo().boundingSphere.radius + Vector3.Distance(x.absolutePosition, Vector3.Zero())));
 }
 
 /**
@@ -116,39 +116,39 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
   return gltfModel;
 }
 
-   /**
-   * Center the imported meshes based on a standard deviation distance from each other
-   * @param {AbstractMesh[]} meshesToCenter - An array of meshes to center by
-   * @param {AbstractMesh[]} allMeshes - All meshes
-   * @returns {Vector3} - the vector to offset all meshes by
-   */
-  export function centerModel(meshesToCenter: AbstractMesh[], allMeshes: AbstractMesh[]): Vector3 {
-    const meshesWithinDeviation = GetMeshesWithinAverageBoxCenterDeviation(meshesToCenter);
-    const offset = meshesWithinDeviation.map(x => x.getBoundingInfo().boundingBox.centerWorld)
-      .reduce((a, b) => a.add(b))
-      .divide(new Vector3(meshesWithinDeviation.length, meshesWithinDeviation.length, meshesWithinDeviation.length));
-    allMeshes.forEach(x => x.setAbsolutePosition(x.absolutePosition.subtract(offset)));
-    return offset;
-  }
+/**
+* Center the imported meshes based on a standard deviation distance from each other
+* @param {AbstractMesh[]} meshesToCenter - An array of meshes to center by
+* @param {AbstractMesh[]} allMeshes - All meshes
+* @returns {Vector3} - the vector to offset all meshes by
+*/
+export function centerModel(meshesToCenter: AbstractMesh[], allMeshes: AbstractMesh[]): Vector3 {
+  const meshesWithinDeviation = GetMeshesWithinAverageBoxCenterDeviation(meshesToCenter);
+  const offset = meshesWithinDeviation.map(x => x.getBoundingInfo().boundingBox.centerWorld)
+    .reduce((a, b) => a.add(b))
+    .divide(new Vector3(meshesWithinDeviation.length, meshesWithinDeviation.length, meshesWithinDeviation.length));
+  allMeshes.forEach(x => x.setAbsolutePosition(x.absolutePosition.subtract(offset)));
+  return offset;
+}
 
-  /**
- * Add a ArcRotateCamera to the scene with IFC based settings
- * @param {Scene} scene - The current Babylon scene
- * @returns {ArcRotateCamera} - a Babylon ArcRotateCamera
- */
-  export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
-    const camera = new ArcRotateCamera('ArcRotateCamera', 0, -Math.PI / 2, 0, Vector3.Zero(), targetScene, true);
-    let cameraRadius = 0;
-    camera.wheelDeltaPercentage = 0.005;
-    targetScene.onBeforeRenderObservable.add(() => {
-      if (cameraRadius === camera.radius) return;
-      cameraRadius = camera.radius;
-      camera.minZ = cameraRadius / 10;
-    });
-    camera.lowerRadiusLimit = 1;
-    camera.panningSensibility = 100;
-    return camera;
-  }
+/**
+* Add a ArcRotateCamera to the scene with IFC based settings
+* @param {Scene} scene - The current Babylon scene
+* @returns {ArcRotateCamera} - a Babylon ArcRotateCamera
+*/
+export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
+  const camera = new ArcRotateCamera('ArcRotateCamera', 0, -Math.PI / 2, 0, Vector3.Zero(), targetScene, true);
+  let cameraRadius = 0;
+  camera.wheelDeltaPercentage = 0.005;
+  targetScene.onBeforeRenderObservable.add(() => {
+    if (cameraRadius === camera.radius) return;
+    cameraRadius = camera.radius;
+    camera.minZ = cameraRadius / 10;
+  });
+  camera.lowerRadiusLimit = 1;
+  camera.panningSensibility = 100;
+  return camera;
+}
 
   function GetMeshesWithinAverageBoxCenterDeviation(meshes: AbstractMesh[]) {
     const boundingBoxCenters = meshes.map(x => ({center: x.getBoundingInfo().boundingBox.centerWorld, mesh: x}));
@@ -204,6 +204,34 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
           mesh.material = pbr
         }
       }
+
+      if (mesh instanceof Mesh) {
+        mesh.material = pbr
+      }
+    }
+  });
+
+  return meshes;
+}
+
+async function fetchGltfUrls(tridifyIfcUID: string): Promise<{ files: SharedConversionFileDTO[], hash: string[] }> {
+  const baseUrl: string = 'https://ws.tridify.com/api';
+  //old conversion
+  const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
+    .then(response => response.json())
+    .then((responseData) => {
+      const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')) as string[];
+      const newGltfUrlFiles: SharedConversionFileDTO[] = [];
+      gltfUrls.forEach(x => {
+        const parsedUrl: string[] = x.split('.gltf')[0].split('_');
+        const part = parsedUrl.pop();
+        const UrlType = part?.includes('part') ? parsedUrl.pop() as string : part as string;
+        const UrlStorey = parsedUrl.pop() as string;
+        const UrlStoreyLevel = parsedUrl.pop() as string;
+        const GltfUrlFile: SharedConversionFileDTO = { Url: x, Type: UrlType, Format: '.gltf', Storey: !UrlStoreyLevel.includes('Tridify') ? UrlStoreyLevel + UrlStorey : UrlStorey };
+        newGltfUrlFiles.push(GltfUrlFile);
+      });
+      return { files: newGltfUrlFiles, hash: [tridifyIfcUID] };
     });
   }
 
@@ -295,6 +323,25 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
     );
     return Promise.all(promiseArray);
   }
+}
+
+/**
+* Load Ifc data object
+* @param {string} uid - conversionID.
+* @param {string} property - Optional - property to load properties under ifc object.
+*/
+export async function loadIfc(uids: string[], property: string = "") {
+  const baseUrl = 'https://ws.tridify.com/api';
+  const promiseArray = uids.map(x => fetch(`${baseUrl}/shared/conversion/${x}/ifc/${property}`, { mode: 'cors' })
+    .then(response => {
+      return response.json();
+    }).catch(() => {
+      console.log('Ifc not found ', x);
+      return [];
+    })
+  );
+  return Promise.all(promiseArray);
+}
 
 
 
