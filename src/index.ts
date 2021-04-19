@@ -7,10 +7,9 @@ import {
   PBRMaterial,
   AbstractMesh,
   Mesh,
+  TransformNode,
   Vector3
  } from '@babylonjs/core';
-
-import "@babylonjs/loaders/glTF/2.0"
 
 /**
  * Frame scene. First it calculates the radius of the entire scene.
@@ -64,22 +63,57 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
 }
 
 /**
- * Load model based from a Tridify model hash
+ * Load merged gltf model based from a Tridify model processed data
  * @param {Scene} scene - The Babylon scene to import model into.
- * @param {string} uid - The Tridify model hash.
+ * @param {string[]} allGltfFiles - The Tridify conversion files
+ * @returns {Promise<GltfModel>} - The bounding distance from origo.
  */
-export async function loadModel(scene: Scene, uid: string) : Promise<string[]> {
-  const myUrls = await fetchGltfUrls(uid);
-  if(myUrls && myUrls.files) {
-    await myUrls.files.forEach(async (x) => {
-      await SceneLoader.ImportMeshAsync("", "", x.Url, scene, null, '.gltf').then((result: any) => {
-        const meshes: AbstractMesh[] = result.meshes;
-        applyPbrMaterials(scene, meshes);
-        meshes.forEach(mesh => mesh.ifcType = x.Type);
-      });
-    });
+ export async function loadMeshGltf(scene: Scene, allGltfFiles: string[]): Promise<GltfModel> {
+  
+  const mergedMeshesNode = new TransformNode('MergedMeshes', scene);
+
+  await Promise.all(allGltfFiles.map(url => SceneLoader.AppendAsync('', url, scene)));
+
+  let extras: { centeringOffset: any, ifc: [] } = { centeringOffset: [], ifc: [] };
+
+  scene.transformNodes.map((node) => {
+    if (node.metadata && node.metadata.gltf && node.metadata.gltf.extras) {
+      extras = node.metadata.gltf.extras;
+    }
+  });
+
+  let modelOffset: Vector3;
+  if (extras.centeringOffset) {
+    const x = Number(extras.centeringOffset[0]);
+    const y = Number(extras.centeringOffset[1]);
+    const z = Number(extras.centeringOffset[2]);
+    modelOffset = new Vector3(x,y,z);
+  }else {
+    modelOffset = Vector3.Zero();
   }
-  return myUrls.hash;
+
+  scene.meshes.map(mesh => {
+    if (mesh.name !== 'navigationMesh') {
+      mesh.setParent(mergedMeshesNode);
+    }
+
+    const postProcessMeshData = extras.ifc[mesh.name] as PostProcessedMeshData[];
+    if (postProcessMeshData) {
+      const data = extras.ifc[mesh.name] as PostProcessedMeshData[];
+      mesh.PostProcessedMeshDatas = data;
+      mesh.ifcType = data[0].ifcType;
+      mesh.isPickable = false;
+      mesh.alwaysSelectAsActiveMesh = true;
+      mesh.renderingGroupId = 1;
+      mesh.useVertexColors = false;
+    }
+    mesh.freezeWorldMatrix();
+  });
+  applyPbrMaterials(scene, scene.meshes);
+  const gltfModel = {} as GltfModel;
+  gltfModel.TransformNode = mergedMeshesNode;
+  gltfModel.ModelOffset = modelOffset;
+  return gltfModel;
 }
 
    /**
@@ -122,14 +156,35 @@ export async function loadModel(scene: Scene, uid: string) : Promise<string[]> {
     const averageDeviation = boundingBoxCenters.reduce((a, b) =>  a + Vector3.Distance(averagePosition, b.center) , 0) / meshes.length;
     const meshesWithinDeviation = boundingBoxCenters.filter(x => Vector3.Distance(averagePosition, x.center) <= averageDeviation).map(x => x.mesh);
     return meshesWithinDeviation.length > 0 ? meshesWithinDeviation : meshes;
-  } 
+  }
+
+ 
+  
+  /**
+ * Load model ConversioData based from a Tridify model hash
+ * @param {string} shareKey - model hash
+ * @returns {Promise<SharedConversionsDTO>} - SharedConversionsDTO containing modelData
+ */
+  export async function fetchSharedConversions(shareKey: string): Promise<SharedConversionsDTO> {
+    const baseUrl: string = 'https://ws.tridify.com/api';
+    const getLinkRequest = fetch(`${baseUrl}/shared/published-links/${shareKey}`, { mode: 'cors' });
+  
+    return getLinkRequest.then((response: Response) => {
+      if (response.ok) {
+        return response.json()
+          .then((responseData: SharedConversionsDTO) => responseData);
+      } else {
+        throw new Error(response.status.toString());
+      }
+    });
+  }
 
   /**
  * Load model based from a Tridify model hash
  * @param {Scene} scene - The current Babylon scene
  * @param {Array<AbstractMesh>} uid - An array of meshes to apply PBR materials to
  */
-  async function applyPbrMaterials(scene: Scene, meshes: Array<AbstractMesh>) {
+   async function applyPbrMaterials(scene: Scene, meshes: Array<AbstractMesh>) {
     meshes.forEach((mesh: AbstractMesh) => {
       if (mesh.material) {
         const serialized = mesh.material.serialize();
@@ -150,68 +205,81 @@ export async function loadModel(scene: Scene, uid: string) : Promise<string[]> {
         }
       }
     });
-  
-    return meshes;
-  }
-  
-  async function fetchGltfUrls(tridifyIfcUID: string) : Promise<{files: SharedConversionFileDTO[], hash: string[]}> {
-    const baseUrl : string= 'https://ws.tridify.com/api';
-    //old conversion
-    const legacyFetch = () => fetch(`${baseUrl}/shared/conversion/${tridifyIfcUID}`)
-      .then(response => response.json())
-      .then((responseData) => {
-          const gltfUrls = responseData.ColladaUrls.filter((x: string) => x.split('?')[0].endsWith('.gltf')) as string[];
-          const newGltfUrlFiles: SharedConversionFileDTO[] = [];
-          gltfUrls.forEach(x => {
-            const parsedUrl: string[] = x.split('.gltf')[0].split('_');
-            const part = parsedUrl.pop();
-            const UrlType = part?.includes('part') ? parsedUrl.pop() as string : part as string;
-            const UrlStorey = parsedUrl.pop() as string;
-            const UrlStoreyLevel = parsedUrl.pop() as string;
-            const GltfUrlFile: SharedConversionFileDTO = {Url: x, Type: UrlType, Format: '.gltf', Storey: !UrlStoreyLevel.includes('Tridify') ? UrlStoreyLevel + UrlStorey : UrlStorey};
-            newGltfUrlFiles.push(GltfUrlFile);
-          });
-          return {files:newGltfUrlFiles, hash: [tridifyIfcUID]};
-      });
-    return fetch(`${baseUrl}/v1/published-links/${tridifyIfcUID}`, { mode: 'cors' })
-      .then(response => {
-        if (response.ok)
-          return response.json()
-            .then((responseData: SharedConversionsDTO) => {
-              const files = responseData.Conversions
-                .flatMap(x => x.Files)
-                .filter(x => x.Format === '.gltf')
-                .map(x => x) as SharedConversionFileDTO[];
-              return {files: files, hash: responseData.Conversions.flatMap(x => x.Hash)};
-            });
-        return legacyFetch();
-      }).catch(x => legacyFetch());
   }
 
   interface SharedConversionsDTO {
     Conversions: SharedConversionDTO[];
+    Configuration: SharedConfigurationDTO;
+    LinkEnabled: boolean;
+    PostProcessState: string; // TODO: Change to enum
+    PostProcessedFiles: string[];
   }
   
   interface SharedConversionDTO {
     Hash: string;
     Files: SharedConversionFileDTO[];
+    FileName: string;
+  }
+
+  interface SharedConfigurationDTO {
+    Tools: ToolsDTO;
+    PropertySetNames: string[];
+    QuantityNames: string[];
+  }
+
+  interface GltfModel {
+    TransformNode: TransformNode;
+    ModelOffset: Vector3;
+  }
+
+  interface ToolsDTO {
+    VRHeadsetMode: boolean;
+    ShareViewer: boolean;
+    MeasureTool: boolean;
+    BimTool: boolean;
+    CuttingPlanesTool: boolean;
+    WaypointTool: boolean;
+    CombinationVisibilityTool: boolean;
+    CommentingTool: boolean;
   }
   
   interface SharedConversionFileDTO {
     Url: string;
-    Type: string;
+    Type: string;   // It is ifc group
     Format: string;
     Storey: string;
+    overLay: boolean;
+    GUID: string;
+    FileName: string | undefined;  // undefined for old conversions
   }
 
   declare module '@babylonjs/core/Meshes/abstractMesh.js' {
     interface AbstractMesh {
       ifcType: string;
+      PostProcessedMeshDatas: PostProcessedMeshData[];
     }
   }
 
+  interface PostProcessedMeshData {
+    ifcGuid: string;
+    ifcType: string;
+    ifcStorey: string;
+    ifcFilename: string;
+    startVertex: number;
+    endVertex: number;
+    startIndex: number;
+    endIndex: number;
+  }
+
+
+
+
+
+// NOT SUPPORTED YET
+
+
   /**
- * Load Ifc data object
+ * fetch Ifc data of object
  * @param {string} uid - conversionID.
  * @param {string} property - Optional - property to load properties under ifc object.
  */
@@ -230,3 +298,4 @@ export async function loadModel(scene: Scene, uid: string) : Promise<string[]> {
 
 
 
+ 
