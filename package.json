@@ -23,7 +23,9 @@
   "homepage": "https://github.com/Tridify/babylonjs-utilities#readme",
   "dependencies": {
     "@babylonjs/core": "^4.2.0",
-    "@babylonjs/loaders": "^4.2.0"
+    "@babylonjs/loaders": "^4.2.0",
+    "lodash": "^4.17.20",
+    "@types/lodash": "^4.14.169"
   },
   "devDependencies": {
     "tslib": "^1.13.0",
