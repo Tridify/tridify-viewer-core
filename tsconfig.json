@@ -19,10 +19,7 @@
       "dom",
       "es2016.array.include",
       "esnext",
-      "esnext.asynciterable",
-      "dom",
-      "dom.iterable",
-      "scripthost"
+      "esnext.asynciterable"
     ],
   }
 }

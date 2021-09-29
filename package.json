@@ -1,6 +1,6 @@
 {
   "name": "@tridify/babylonjs-utilities",
-  "version": "0.1.3",
+  "version": "0.2.0-alpha",
   "description": "Babylonjs utilities that help working with Tridify IFC files",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,9 @@
   "homepage": "https://github.com/Tridify/babylonjs-utilities#readme",
   "dependencies": {
     "@babylonjs/core": "^4.2.0",
-    "@babylonjs/loaders": "^4.2.0"
+    "@babylonjs/loaders": "^4.2.0",
+    "@types/lodash": "^4.14.169",
+    "lodash": "^4.17.20"
   },
   "devDependencies": {
     "tslib": "^1.13.0",
