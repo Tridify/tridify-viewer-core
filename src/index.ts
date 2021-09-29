@@ -72,60 +72,6 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
 }
 
 /**
- * Load merged gltf model based from a Tridify model processed data
- * @param {Scene} scene - The Babylon scene to import model into.
- * @param {string[]} allGltfFiles - The Tridify conversion files
- * @returns {Promise<GltfModel>} - The bounding distance from origo.
- */
- export async function loadMeshGltf(scene: Scene, allGltfFiles: string[]): Promise<GltfModel> {
-  
-  const mergedMeshesNode = new TransformNode('MergedMeshes', scene);
-
-  await Promise.all(allGltfFiles.map(url => SceneLoader.AppendAsync('', url, scene)));
-
-  let extras: { centeringOffset: any, ifc: [] } = { centeringOffset: [], ifc: [] };
-
-  scene.transformNodes.map((node: any) => {
-    if (node.metadata && node.metadata.gltf && node.metadata.gltf.extras) {
-      extras = node.metadata.gltf.extras;
-    }
-  });
-
-  let modelOffset: Vector3;
-  if (extras.centeringOffset) {
-    const x = Number(extras.centeringOffset[0]);
-    const y = Number(extras.centeringOffset[1]);
-    const z = Number(extras.centeringOffset[2]);
-    modelOffset = new Vector3(x,y,z);
-  }else {
-    modelOffset = Vector3.Zero();
-  }
-
-  scene.meshes.map((mesh: any) => {
-    if (mesh.name !== 'navigationMesh') {
-      mesh.setParent(mergedMeshesNode);
-    }
-
-    const postProcessMeshData = extras.ifc[mesh.name] as PostProcessedMeshData[];
-    if (postProcessMeshData) {
-      const data = extras.ifc[mesh.name] as PostProcessedMeshData[];
-      mesh.PostProcessedMeshDatas = data;
-      mesh.ifcType = data[0].ifcType;
-      mesh.isPickable = false;
-      mesh.alwaysSelectAsActiveMesh = true;
-      mesh.renderingGroupId = 1;
-      mesh.useVertexColors = false;
-    }
-    mesh.freezeWorldMatrix();
-  });
-  applyPbrMaterials(scene, scene.meshes);
-  const gltfModel = {} as GltfModel;
-  gltfModel.TransformNode = mergedMeshesNode;
-  gltfModel.ModelOffset = modelOffset;
-  return gltfModel;
-}
-
-/**
 * Center the imported meshes based on a standard deviation distance from each other
 * @param {AbstractMesh[]} meshesToCenter - An array of meshes to center by
 * @param {AbstractMesh[]} allMeshes - All meshes
@@ -322,168 +268,179 @@ export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
 
   let ifcNames: Array<string | undefined>;
 
-  /**
+/**
  * Load merged gltf model based from a Tridify model processed data
  * @param {Scene} scene - The Babylon scene to import model into.
  * @param {string[]} allGltfFiles - The Tridify conversion files
  * @returns {Promise<GltfModel>} - The bounding distance from origo.
  */
-  export async function newLoadMeshGltf(scene: Scene, allGltfFiles: string[], linkedFiles: Map<string, string>, passingOffset: (vector: Vector3) => void, subTrackers?: any): Promise<TransformNode> {
-    // Buffer binary files do not show in in progress total until they are requested
-    // so an estimate of 1GB per file is used until the main file is parsed
-    let parsed = false;
-    const linkedFilesSizeEstimate = linkedFiles.size * 1024000000; // 1GB per file;
-  
-    SceneLoader.OnPluginActivatedObservable.add(function(loader) {
-      if (loader.name === 'gltf') {
-        const gltf = loader as GLTFFileLoader;
-        gltf.validate = false; // with validation linked files are loaded twice
-        gltf.onParsed = ld => {parsed = true; };
-        gltf.preprocessUrlAsync = x =>  {
-          const filename = x.substring(x.lastIndexOf('/') + 1);
-          const linked = linkedFiles.get(filename) ?? filename;
-          return Promise.resolve(linked);
-        };
-      }
-    });
-  
-    SceneLoader.ShowLoadingScreen = false;
-    console.log(1);
-    const mergedMeshesNode = new TransformNode('MergedMeshes', scene);
-    console.log(1.1);
-    console.log(1.111);
-    await Promise.all(allGltfFiles.map(url => SceneLoader.AppendAsync('', url, scene, progress => {
-      const totalProgress = parsed ? progress.total : progress.total  + linkedFilesSizeEstimate;
-      if(subTrackers) {
-        subTrackers.importModels.UpdateProgress((progress.loaded / totalProgress) * 1.05);
-      }
-    })));
-    console.log(1.2);
-    let extras: { centeringOffset: any, ifc: [] } = { centeringOffset: [], ifc: [] };
-    console.log(1.3);
-    scene.transformNodes.forEach(node => {
-      if (node.metadata && node.metadata.gltf && node.metadata.gltf.extras) {
-        extras = node.metadata.gltf.extras;
-        node.dispose();
-      }
-    });
-    console.log(2);
-    /*if (extras.centeringOffset && passingOffset) {
-      const x = Number(extras.centeringOffset[0]);
-      const y = Number(extras.centeringOffset[1]);
-      const z = Number(extras.centeringOffset[2]);
-      passingOffset(new Vector3(-x, y, z))
-    }*/
-  
-    const firstDataValue = Object.values(extras.ifc)[0] as PostProcessedMeshData;
-    const firstIfcType = firstDataValue.ifcType;
-    const firstIfcStorey = firstDataValue.ifcStorey;
-    const firstIfcFilename = firstDataValue.ifcFilename;
-  
-    ifcNames = scene.meshes.map(mesh => {
-      if (mesh.name !== 'navigationMesh' && mesh.name !== '__root__') {
-        if (!mesh.hasInstances) { //as any will fix issue with typescript
-          const postProcessMeshData = extras.ifc[mesh.name as any] as PostProcessedMeshData[];
-          if (postProcessMeshData && postProcessMeshData[0]) {
-            return postProcessMeshData[0].ifcFilename;
-          }
-        }
-      }
-    }).filter(x => !!x);
-    ifcNames = uniq(ifcNames);
-    ifcNames = ifcNames.map(name => name!.split('.ifc')[0]);
-  
-    const instancesRoot = scene.getTransformNodeByName('instances');
-    console.log(3);
-    if (instancesRoot) {
-      instancesRoot.getDescendants(false).map(node => {
-        if (node instanceof Mesh && node.hasInstances) {
-          const mesh = node as Mesh;
-          mesh.name = mesh.name.split('_primitive')[0];
-  
-          mesh.flipFaces(false);
-  
-          const pivotMatrix = mesh.getPivotMatrix();
-          const meshMatrix = mesh.computeWorldMatrix(true).multiply(pivotMatrix);
-          mesh.resetLocalMatrix(true);
-  
-          const bufferMatrices = new Float32Array(16 * (mesh.instances.length + 1));
-  
-          mesh.instanceIfcDataByGuid = new Map();
-          mesh.instances.forEach((instance, index) => {
-            instance.name = instance.name.split('_primitive')[0];
-  
-            const instanceMatrix = instance.computeWorldMatrix(true).multiply(pivotMatrix);
-            instanceMatrix.copyToArray(bufferMatrices, index * 16);
-  
-            const instanceIfcData = extras.ifc[instance.name as any] as PostProcessedInstanceData;
-            if (instanceIfcData) mesh.instanceIfcDataByGuid!.set(instance.name, instanceIfcData);
-            else { console.error(`Instance ${instance.name} ${index + 1} of ${mesh.instances.length} doesn't have any ifc data!`); }
-          });
-  
-          meshMatrix.copyToArray(bufferMatrices, mesh.instances.length * 16);
-  
-          mesh.thinInstanceSetBuffer('matrix', bufferMatrices, 16, true);
-  
-          const meshInstanceData = extras.ifc[mesh.name as any] as PostProcessedInstanceData;
-          if (meshInstanceData) {
-            mesh.instanceIfcDataByGuid!.set(mesh.name, meshInstanceData);
-          } else {
-            console.error(`Mesh ${mesh.name} with ${mesh.instances.length} instances doesn't have any ifc data!`);
-          }
-  
-          mesh.ifcType = meshInstanceData ? meshInstanceData.ifcType : firstIfcType;
-          mesh.ifcStorey = meshInstanceData ? meshInstanceData.ifcStorey : firstIfcStorey;
-  
-          const filename = getIfcFilenameForInstances(meshInstanceData?.ifcFilename);
-          mesh.ifcFilename = filename ? filename : firstIfcFilename;
-  
-          mesh.ifcId = linkedFiles.get(mesh.ifcFilename);
-  
-          mesh.instances.forEach(instance => {
-            instance.dispose();
-          });
-          mesh.parent = mergedMeshesNode;
-        }
-      });
-      instancesRoot.dispose();
+ export async function loadMeshGltf(scene: Scene, allGltfFiles: string[]): Promise<TransformNode> {
+  // Buffer binary files do not show in in progress total until they are requested
+  // so an estimate of 1GB per file is used until the main file is parsed
+  //let parsed = false;
+  //const linkedFilesSizeEstimate = ViewerVariables.getInstance().getLinkedFileCount() * 1024000000; // 1GB per file;
+
+  /*SceneLoader.OnPluginActivatedObservable.add(function(loader) {
+    if (loader.name === 'gltf') {
+      const gltf = loader as GLTFFileLoader;
+      gltf.validate = false; // with validation linked files are loaded twice
+      gltf.onParsed = ld => {parsed = true; };
+      gltf.preprocessUrlAsync = x =>  {
+        const filename = x.substring(x.lastIndexOf('/') + 1);
+        const linked = ViewerVariables.getInstance().getLinkedFileUrl(filename);
+        console.log(linked, filename)
+        return Promise.resolve(linked);
+      };
     }
-    console.log(4);
-    scene.meshes.forEach(mesh => {
-      if (mesh.name !== 'navigationMesh' && mesh.name !== '__root__') {
-        mesh.setParent(mergedMeshesNode);
+  });*/
+  console.log(allGltfFiles[0])
+  const a = await SceneLoader.AppendAsync('', allGltfFiles[0], scene, (foo) => {
+    console.log(foo)
+  }).catch(err => console.log(err))
+  console.log(a);
+  let arr = ['1', '2', '3']
+  let promises = arr.map((x) => {
+    return new Promise(function(resolve, reject) {
+      setTimeout(() => resolve(x), 1000);
+    });
+  });
+  await Promise.all(promises).then((x) => console.log(x))
+  SceneLoader.ShowLoadingScreen = false;
+
+  const mergedMeshesNode = new TransformNode('MergedMeshes', scene);
   
-        if (!mesh.hasThinInstances) {
-          const postProcessMeshData = extras.ifc[mesh.name as any] as PostProcessedMeshData[];
-          if (postProcessMeshData) {
-            mesh.postProcessedMeshDatas = postProcessMeshData;
-            mesh.ifcType = postProcessMeshData[0].ifcType;
-            mesh.ifcStorey = postProcessMeshData[0].ifcStorey;
-            mesh.ifcFilename = postProcessMeshData[0].ifcFilename;
-            mesh.ifcId = linkedFiles.get(postProcessMeshData[0].ifcFilename);
-          } else {
-            console.error(`Mesh ${mesh.name} doesn't have any ifc data!`);
-          }
+  /*await Promise.all(allGltfFiles.map(url => SceneLoader.AppendAsync('', url, scene, progress => {
+    //const totalProgress = parsed ? progress.total : progress.total  + linkedFilesSizeEstimate;
+    //subTrackers.importModels.UpdateProgress((progress.loaded / totalProgress) * 1.05);
+  })));*/
+
+  let extras: { centeringOffset: any, ifc: [] } = { centeringOffset: [], ifc: [] };
+
+  scene.transformNodes.forEach(node => {
+    if (node.metadata && node.metadata.gltf && node.metadata.gltf.extras) {
+      extras = node.metadata.gltf.extras;
+      node.dispose();
+    }
+  });
+
+  /*if (extras.centeringOffset) {
+    const x = Number(extras.centeringOffset[0]);
+    const y = Number(extras.centeringOffset[1]);
+    const z = Number(extras.centeringOffset[2]);
+    ViewerVariables.getInstance().setCenteringOffset(new Vector3(-x, y, z));
+  }*/
+
+  const firstDataValue = Object.values(extras.ifc)[0] as PostProcessedMeshData;
+  const firstIfcType = firstDataValue.ifcType;
+  const firstIfcStorey = firstDataValue.ifcStorey;
+  const firstIfcFilename = firstDataValue.ifcFilename;
+
+  ifcNames = scene.meshes.map(mesh => {
+    if (mesh.name !== 'navigationMesh' && mesh.name !== '__root__') {
+      if (!mesh.hasInstances) {
+        const postProcessMeshData = extras.ifc[mesh.name as any] as PostProcessedMeshData[];
+        if (postProcessMeshData && postProcessMeshData[0]) {
+          return postProcessMeshData[0].ifcFilename;
         }
       }
-  
-      mesh.isPickable = false;
-      mesh.alwaysSelectAsActiveMesh = true;
-      mesh.renderingGroupId = 1;
-      mesh.useVertexColors = false;
-      mesh.freezeWorldMatrix();
+    }
+  }).filter(x => !!x);
+  ifcNames = uniq(ifcNames);
+  ifcNames = ifcNames.map(name => name!.split('.ifc')[0]);
+
+  const instancesRoot = scene.getTransformNodeByName('instances');
+
+  if (instancesRoot) {
+    instancesRoot.getDescendants(false).map(node => {
+      if (node instanceof Mesh && node.hasInstances) {
+        const mesh = node as Mesh;
+        mesh.name = mesh.name.split('_primitive')[0];
+
+        mesh.flipFaces(false);
+
+        const pivotMatrix = mesh.getPivotMatrix();
+        const meshMatrix = mesh.computeWorldMatrix(true).multiply(pivotMatrix);
+        mesh.resetLocalMatrix(true);
+
+        const bufferMatrices = new Float32Array(16 * (mesh.instances.length + 1));
+
+        mesh.instanceIfcDataByGuid = new Map();
+        mesh.instances.forEach((instance, index) => {
+          instance.name = instance.name.split('_primitive')[0];
+
+          const instanceMatrix = instance.computeWorldMatrix(true).multiply(pivotMatrix);
+          instanceMatrix.copyToArray(bufferMatrices, index * 16);
+
+          const instanceIfcData = extras.ifc[instance.name as any] as PostProcessedInstanceData;
+          if (instanceIfcData) mesh.instanceIfcDataByGuid!.set(instance.name, instanceIfcData);
+          else { console.error(`Instance ${instance.name} ${index + 1} of ${mesh.instances.length} doesn't have any ifc data!`); }
+        });
+
+        meshMatrix.copyToArray(bufferMatrices, mesh.instances.length * 16);
+
+        mesh.thinInstanceSetBuffer('matrix', bufferMatrices, 16, true);
+
+        const meshInstanceData = extras.ifc[mesh.name as any] as PostProcessedInstanceData;
+        if (meshInstanceData) {
+          mesh.instanceIfcDataByGuid!.set(mesh.name, meshInstanceData);
+        } else {
+          console.error(`Mesh ${mesh.name} with ${mesh.instances.length} instances doesn't have any ifc data!`);
+        }
+
+        mesh.ifcType = meshInstanceData ? meshInstanceData.ifcType : firstIfcType;
+        mesh.ifcStorey = meshInstanceData ? meshInstanceData.ifcStorey : firstIfcStorey;
+
+        const filename = getIfcFilenameForInstances(meshInstanceData?.ifcFilename);
+        mesh.ifcFilename = filename ? filename : firstIfcFilename;
+
+        mesh.ifcId = "adsdas"//ViewerVariables.getInstance().getIfcIdFromFilename(mesh.ifcFilename);
+        mesh.ifcId = "adsads"//mesh.ifcId ? mesh.ifcId : ViewerVariables.getInstance().getIfcIds()[0];
+
+        mesh.instances.forEach(instance => {
+          instance.dispose();
+        });
+        mesh.parent = mergedMeshesNode;
+      }
     });
-  
-    scene.materials.forEach(material => {
-      material.getBindedMeshes().forEach((mesh, index) => {
-        mesh.material = material.clone(material.id + '_' + index.toString().padStart(3, '0'));
-      });
-    });
-    console.log(5);
-    if(subTrackers) subTrackers.importModels.UpdateProgress(1);
-  
-    return mergedMeshesNode;
+    instancesRoot.dispose();
   }
+
+  scene.meshes.forEach(mesh => {
+    if (mesh.name !== 'navigationMesh' && mesh.name !== '__root__') {
+      mesh.setParent(mergedMeshesNode);
+
+      if (!mesh.hasThinInstances) {
+        const postProcessMeshData = extras.ifc[mesh.name as any] as PostProcessedMeshData[];
+        if (postProcessMeshData) {
+          mesh.postProcessedMeshDatas = postProcessMeshData;
+          mesh.ifcType = postProcessMeshData[0].ifcType;
+          mesh.ifcStorey = postProcessMeshData[0].ifcStorey;
+          mesh.ifcFilename = postProcessMeshData[0].ifcFilename;
+          mesh.ifcId = "dsaads"//ViewerVariables.getInstance().getIfcIdFromFilename(postProcessMeshData[0].ifcFilename);
+          mesh.ifcId = "adsdasads"//mesh.ifcId ? mesh.ifcId : ViewerVariables.getInstance().getIfcIds()[0];
+        } else {
+          console.error(`Mesh ${mesh.name} doesn't have any ifc data!`);
+        }
+      }
+    }
+
+    mesh.isPickable = false;
+    mesh.alwaysSelectAsActiveMesh = true;
+    mesh.renderingGroupId = 1;
+    mesh.useVertexColors = false;
+    mesh.freezeWorldMatrix();
+  });
+
+  scene.materials.forEach(material => {
+    material.getBindedMeshes().forEach((mesh, index) => {
+      mesh.material = material.clone(material.id + '_' + index.toString().padStart(3, '0'));
+    });
+  });
+
+  //subTrackers.importModels.UpdateProgress(1);
+
+  return mergedMeshesNode;
+}
   
   /** Hotfix for incorrect file names passed to instances. There may be files that will rely on this in "the wild" */
   const getIfcFilenameForInstances = (filename: string) => {
