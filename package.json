@@ -25,7 +25,11 @@
     "@babylonjs/core": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
     "@types/lodash": "^4.14.169",
-    "lodash": "^4.17.20"
+    "lodash": "^4.17.20",
+    "rxjs": "^7.0.1",
+    "mobile-detect": "^1.4.4",
+    "detect-browser": "^5.2.0",
+    "uuid": "^8.3.1"
   },
   "devDependencies": {
     "tslib": "^1.13.0",

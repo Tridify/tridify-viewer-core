@@ -498,17 +498,30 @@ export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], 
       }
     }
 
+    // TODO: Create material copies on demand when wanting to turn a custom shader feature on for certain mesh(es)
+  scene.materials.forEach(material => {
+    material.getBindedMeshes().forEach((mesh, index) => {
+      const mat = material.clone(material.id + '_' + index.toString().padStart(3, '0')) as TridifyPbrMaterial;
+      const specularColor = mat.reflectivityColor;
+
+      // HACK: Override default specular of 0.5 generated during mesh post-processing as it makes materials unnatural
+      // TODO: This can be removed after post-processor has more sensible defaults and we expect that old links that had the 0.5 default do not exist or are not used anymore
+      if (Math.abs(specularColor.r - 0.5) < 0.0001 && Math.abs(specularColor.g - 0.5) < 0.0001 && Math.abs(specularColor.b - 0.5) < 0.0001) {
+        specularColor.r = 0.05;
+        specularColor.g = 0.05;
+        specularColor.b = 0.05;
+        mat.reflectivityColor = specularColor;
+      }
+
+      mesh.material = mat;
+    });
+  });
+
     mesh.isPickable = false;
     mesh.alwaysSelectAsActiveMesh = true;
     mesh.renderingGroupId = 1;
     mesh.useVertexColors = false;
     mesh.freezeWorldMatrix();
-  });
-
-  scene.materials.forEach(material => {
-    material.getBindedMeshes().forEach((mesh, index) => {
-      mesh.material = material.clone(material.id + '_' + index.toString().padStart(3, '0'));
-    });
   });
 
   if(subTrackers) subTrackers.importModels.UpdateProgress(1);
