@@ -370,8 +370,7 @@ export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], 
   GLTFLoader.RegisterExtension("ExtrasAsMetadata", (loader) => new ExtrasAsMetadata(loader));
   GLTFLoader.RegisterExtension("KHR_materials_pbrSpecularGlossiness", (loader) => new KHR_materials_pbrSpecularGlossiness(loader));
   GLTFLoader.RegisterExtension("EXT_mesh_gpu_instancing", (loader) => new EXT_mesh_gpu_instancing(loader));
-  //GLTFLoader.RegisterExtension('TridifyMaterialLoader', (loader) => { return new TridifyMaterialLoader(loader); });
-  
+  GLTFLoader.RegisterExtension("TridifyMaterialLoader", (loader) => new TridifyMaterialLoader(loader));
   
   // Buffer binary files do not show in in progress total until they are requested
   // so an estimate of 1GB per file is used until the main file is parsed
@@ -520,7 +519,6 @@ export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], 
     material.getBindedMeshes().forEach((mesh, index) => {
       const mat = material.clone(material.id + '_' + index.toString().padStart(3, '0')) as TridifyPbrMaterial;
       const specularColor = mat.reflectivityColor;
-      console.log("here")
       // HACK: Override default specular of 0.5 generated during mesh post-processing as it makes materials unnatural
       // TODO: This can be removed after post-processor has more sensible defaults and we expect that old links that had the 0.5 default do not exist or are not used anymore
       if (Math.abs(specularColor.r - 0.5) < 0.0001 && Math.abs(specularColor.g - 0.5) < 0.0001 && Math.abs(specularColor.b - 0.5) < 0.0001) {
@@ -548,3 +546,20 @@ const getIfcFilenameForInstances = (filename: string) => {
     return filename;
   }
 };
+
+
+function TridifyMaterialLoader(this, loader) {
+  this.name = 'TridifyMaterialLoader';
+  this.enabled = true;
+
+  this.createMaterial = function(context, material, babylonDrawMode) {
+    material = new TridifyPbrMaterial(material.name, loader.babylonScene);
+    material.sideOrientation = Material.CounterClockWiseSideOrientation;
+    console.log("here22")
+    if (material.alpha < 1.0) {
+      material.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+    }
+
+    return material;
+  };
+}

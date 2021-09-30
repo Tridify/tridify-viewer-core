@@ -2,9 +2,9 @@ import { Quaternion, Vector3, Matrix, FreeCamera, Epsilon, ISize, Scalar, Scene,
 import { ArcRotateCameraState } from './ArcRotateCameraState';
 import { CameraState, CameraTarget } from './CameraState';
 import { setActiveCamera, freeCameraFov, onChangeToOrbitMode, onChangeToFreeMode, onAfterCameraHasMoved, freeCameraMinZ, orbitCameraMinZ } from './cameraUtils';
-//import { Viewpoint, PerspectiveCamera, CAMERA_TYPE } from '@/tools/CommentingTool/Viewpoint';
-import { v4 as uuidV4 } from 'uuid';
-import { easeIn, easeOut, easeInQuint, easeOutQuint } from '../mathHelper';
+// import { Viewpoint, PerspectiveCamera, CAMERA_TYPE } from '@/tools/CommentingTool/Viewpoint';
+// import { v4 as uuidV4 } from 'uuid';
+import { easeIn, easeInQuint, easeOutQuint } from '../mathHelper';
 export class FreeCameraState extends CameraState {
 
     public position: Vector3 = Vector3.Zero();
