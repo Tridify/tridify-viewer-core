@@ -1,5 +1,5 @@
 {
-  "name": "@tridify/babylonjs-utilities",
+  "name": "@tridify/babylonjs-core",
   "version": "0.2.0-alpha",
   "description": "Babylonjs utilities that help working with Tridify IFC files",
   "main": "dist/index.js",
@@ -25,13 +25,16 @@
     "@babylonjs/core": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
     "@types/lodash": "^4.14.169",
-    "lodash": "^4.17.20",
-    "rxjs": "^7.0.1",
-    "mobile-detect": "^1.4.4",
+    "@types/rx": "^4.1.2",
     "detect-browser": "^5.2.0",
+    "install": "^0.13.0",
+    "lodash": "^4.17.20",
+    "mobile-detect": "^1.4.4",
+    "rxjs": "^7.3.0",
     "uuid": "^8.3.1"
   },
   "devDependencies": {
+    "@types/node": "^16.10.2",
     "tslib": "^1.13.0",
     "typescript": "^3.9.7"
   }

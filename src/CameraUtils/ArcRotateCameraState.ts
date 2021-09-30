@@ -16,16 +16,16 @@ export class ArcRotateCameraState extends CameraState {
 
     public pseudoOrthogonalPosition?: Vector3;
 
-    public constructor(cameraState?: CameraState) {
-        super();
-        if (cameraState) this.fromCameraState(cameraState);
+    public constructor(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, cameraState?: CameraState) {
+        super(mainScene, orbitCamera, freeCamera);
+        if (cameraState) this.fromCameraState(cameraState, mainScene, orbitCamera, freeCamera);
     }
 
     public getClassName(): string {
         return 'ArcRotateCameraState';
     }
 
-    public fromCameraState(cameraState: CameraState): void {
+    public fromCameraState(cameraState: CameraState, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void {
 
         this.position = cameraState.position.clone();
         this.target = cameraState.target.clone();
@@ -90,8 +90,8 @@ export class ArcRotateCameraState extends CameraState {
         return viewpoint;
     }*/
 
-    public clone(): ArcRotateCameraState {
-        const result = new ArcRotateCameraState();
+    public clone(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): ArcRotateCameraState {
+        const result = new ArcRotateCameraState(mainScene, orbitCamera, freeCamera);
         result.alpha = normalizeAngle(this.alpha);
         result.beta = normalizeAngle(this.beta);
         result.radius = this.radius;
@@ -102,26 +102,26 @@ export class ArcRotateCameraState extends CameraState {
         return result;
     }
 
-    public interpolateToState(lerpTarget: CameraState, freeCamera: FreeCamera, orbitCamera: ArcRotateCamera, mainScene: Scene): Promise<string> {
+    public interpolateToState(lerpTarget: CameraState, engine: Engine, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string> {
 
         if (lerpTarget instanceof FreeCameraState) {
 
             onChangeToFreeMode.next();
             setActiveCamera(freeCamera, mainScene);
 
-            const freeCameraState = new FreeCameraState(this);
+            const freeCameraState = new FreeCameraState(mainScene, orbitCamera, freeCamera, this);
             freeCamera.setCameraState(freeCameraState);
 
-            return freeCameraState.interpolateToState(lerpTarget, mainScene, orbitCamera);
+            return freeCameraState.interpolateToState(lerpTarget, engine, mainScene, orbitCamera, freeCamera);
 
         } else if (lerpTarget instanceof ArcRotateCameraState) {
             this.setupPseudoOrthogonalPositionToCamera(orbitCamera, lerpTarget);
             this.shortestAlphaBetaToState(lerpTarget);
         }
-        return this.setupInterpolationObserver(lerpTarget);
+        return this.setupInterpolationObserver(lerpTarget, engine, mainScene, orbitCamera, freeCamera);
     }
 
-    protected interpolate(lerpTarget: CameraState, orbitCamera: ArcRotateCamera, engine: Engine): void {
+    protected interpolate(lerpTarget: CameraState, engine: Engine, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void {
 
         CameraState.elapsedLerpTime += engine.getDeltaTime() * 0.001;
         let lerpTime = CameraState.elapsedLerpTime / CameraState.interpolationDuration;
@@ -155,13 +155,13 @@ export class ArcRotateCameraState extends CameraState {
             const lerpSize = this.interpolateWorldSnapshotSize(lerpTarget, fovLerpValue);
             if (lerpSize) {
                 this.calculateFovFromScreenAspect(orbitCamera, lerpRadius, lerpSize);
-                CameraState.lastArcRotateState = orbitCamera.getCameraState(CameraState.lastArcRotateState);
+                CameraState.lastArcRotateState = orbitCamera.getCameraState(mainScene, orbitCamera, freeCamera, CameraState.lastArcRotateState);
                 onAfterCameraHasMoved.next();
             }
         }
 
         if (lerpTime === 1) {
-            this.endInterpolate(lerpTarget);
+            this.endInterpolate(lerpTarget, mainScene, orbitCamera, freeCamera);
             return;
         }
     }
@@ -265,15 +265,15 @@ export class ArcRotateCameraState extends CameraState {
 declare module '@babylonjs/core/Cameras/arcRotateCamera.js' {
 
     interface ArcRotateCamera {
-        getCameraState(state?: ArcRotateCameraState): ArcRotateCameraState;
-        setCameraState(state: CameraState): void;
-        interpolateTo(target: CameraTarget): Promise<string>;
+        getCameraState(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, state?: ArcRotateCameraState): ArcRotateCameraState;
+        setCameraState(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, state: CameraState): void;
+        interpolateTo(target: CameraTarget, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string>;
     }
 }
 
-ArcRotateCamera.prototype.getCameraState = function(this: ArcRotateCamera, state?: ArcRotateCameraState): ArcRotateCameraState {
+ArcRotateCamera.prototype.getCameraState = function(this: ArcRotateCamera, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, state?: ArcRotateCameraState): ArcRotateCameraState {
 
-    state = state ? state : new ArcRotateCameraState();
+    state = state ? state : new ArcRotateCameraState(mainScene, orbitCamera, freeCamera);
     state.alpha = normalizeAngle(this.alpha);
     state.beta = normalizeAngle(this.beta);
     state.radius = this.radius;
@@ -285,9 +285,9 @@ ArcRotateCamera.prototype.getCameraState = function(this: ArcRotateCamera, state
     return state;
 };
 
-ArcRotateCamera.prototype.setCameraState = function(this: ArcRotateCamera, state: CameraState): void {
+ArcRotateCamera.prototype.setCameraState = function(this: ArcRotateCamera, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, state: CameraState): void {
 
-    const arcState = new ArcRotateCameraState(state);
+    const arcState = new ArcRotateCameraState(mainScene, orbitCamera, freeCamera, state);
 
     // @ts-ignore
     this._position = arcState.position.clone();
@@ -300,12 +300,12 @@ ArcRotateCamera.prototype.setCameraState = function(this: ArcRotateCamera, state
     this.fov = arcState.fov;
 };
 
-ArcRotateCamera.prototype.interpolateTo = function(this: ArcRotateCamera, target: CameraTarget, mainScene: Scene): Promise<string> {
+ArcRotateCamera.prototype.interpolateTo = function(this: ArcRotateCamera, target: CameraTarget, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string> {
     if (!(mainScene.activeCamera instanceof ArcRotateCamera)) {
         console.error('Attempting to interpolate inactive camera');
         setActiveCamera(this, mainScene);
     }
-    return this.getCameraState().interpolateTo(target);
+    return this.getCameraState(mainScene, orbitCamera, freeCamera).interpolateTo(target, mainScene, orbitCamera, freeCamera);
 };
 
 

@@ -1,11 +1,10 @@
 import { Quaternion, Vector3, Matrix, FreeCamera, Epsilon, ISize, Scalar, Scene, Engine, ArcRotateCamera } from '@babylonjs/core';
 import { ArcRotateCameraState } from './ArcRotateCameraState';
 import { CameraState, CameraTarget } from './CameraState';
-import { mainScene, engine, orbitCamera, freeCamera } from '@/initialize';
 import { setActiveCamera, freeCameraFov, onChangeToOrbitMode, onChangeToFreeMode, onAfterCameraHasMoved, freeCameraMinZ, orbitCameraMinZ } from './cameraUtils';
-import { Viewpoint, PerspectiveCamera, CAMERA_TYPE } from '@/tools/CommentingTool/Viewpoint';
+//import { Viewpoint, PerspectiveCamera, CAMERA_TYPE } from '@/tools/CommentingTool/Viewpoint';
 import { v4 as uuidV4 } from 'uuid';
-import { easeIn, easeOut, easeInQuint, easeOutQuint } from '../utils/mathHelper';
+import { easeIn, easeOut, easeInQuint, easeOutQuint } from '../mathHelper';
 export class FreeCameraState extends CameraState {
 
     public position: Vector3 = Vector3.Zero();
@@ -16,8 +15,8 @@ export class FreeCameraState extends CameraState {
     public static virtualTargetDistance: number = 5;
     public radius: number = 0;
 
-    public constructor(cameraState?: CameraState) {
-        super();
+    public constructor(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, cameraState?: CameraState) {
+        super(mainScene, orbitCamera, freeCamera);
         if (cameraState) this.fromCameraState(cameraState);
     }
 
@@ -34,7 +33,7 @@ export class FreeCameraState extends CameraState {
         this.radius = cameraState.radius;
     }
 
-    public async fromViewpoint(viewpoint: Viewpoint): Promise<any> {
+    /*public async fromViewpoint(viewpoint: Viewpoint): Promise<any> {
 
         if (viewpoint.orthogonalCamera) console.error(`Orthogonal viewpoint set to first person camera.`);
 
@@ -42,7 +41,7 @@ export class FreeCameraState extends CameraState {
         this.target = viewpoint.target.clone();
         this.fov = viewpoint.perspectiveCamera ? viewpoint.perspectiveCamera.fieldOfView : freeCameraFov;
         this.rotation = this.getRotation();
-        this.associatedViewpoint = viewpoint;
+        //this.associatedViewpoint = viewpoint;
 
         this.viewWorldSize = await viewpoint.getWorldSnapshotSize();
 
@@ -77,10 +76,10 @@ export class FreeCameraState extends CameraState {
         viewpoint.target = this.target.clone();
 
         return viewpoint;
-    }
+    }*/
 
-    public clone(): FreeCameraState {
-        const result = new FreeCameraState();
+    public clone(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): FreeCameraState {
+        const result = new FreeCameraState(mainScene, orbitCamera, freeCamera);
         result.position = this.position.clone();
         result.fov = this.fov;
         result.target = this.target.clone();
@@ -89,23 +88,23 @@ export class FreeCameraState extends CameraState {
         return result;
     }
 
-    public interpolateToState(lerpTarget: CameraState, mainScene: Scene, orbitCamera: ArcRotateCamera): Promise<string> {
+    public interpolateToState(lerpTarget: CameraState, engine: Engine, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string> {
 
         if (lerpTarget instanceof ArcRotateCameraState) {
 
             setActiveCamera(orbitCamera, mainScene);
 
-            const arcRotateCameraState = new ArcRotateCameraState(this);
-            orbitCamera.setCameraState(arcRotateCameraState);
+            const arcRotateCameraState = new ArcRotateCameraState(mainScene, orbitCamera, freeCamera, this);
+            orbitCamera.setCameraState(mainScene, orbitCamera, freeCamera, arcRotateCameraState);
 
-            return arcRotateCameraState.interpolateToState(lerpTarget);
+            return arcRotateCameraState.interpolateToState(lerpTarget, engine, mainScene, orbitCamera, freeCamera);
         } else if (lerpTarget instanceof FreeCameraState) {
             this.setupPseudoOrthogonalPositionToCamera(orbitCamera, lerpTarget);
         }
-        return this.setupInterpolationObserver(lerpTarget);
+        return this.setupInterpolationObserver(lerpTarget, engine, mainScene, orbitCamera, freeCamera);
     }
 
-    protected interpolate(lerpTarget: CameraState, engine: Engine, freeCamera: FreeCamera): void {
+    protected interpolate(lerpTarget: CameraState, engine: Engine, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void {
 
         CameraState.elapsedLerpTime += engine.getDeltaTime() * 0.001;
         let lerpTime = CameraState.elapsedLerpTime / CameraState.interpolationDuration;
@@ -133,18 +132,18 @@ export class FreeCameraState extends CameraState {
 
             this.correctCameraCloseTarget(freeCamera, lerpTarget);
 
-            freeCamera.setTargetWithOffsetRotation(freeCamera._currentTarget, CameraState.scratchFreeState.rotation);
+            freeCamera.setTargetWithOffsetRotation(freeCamera._currentTarget, CameraState.scratchFreeState.rotation, freeCamera);
 
             const lerpSize = this.interpolateWorldSnapshotSize(lerpTarget, fovLerpValue);
             if (lerpSize) {
                 this.calculateFovFromScreenAspect(freeCamera, lerpRadius, lerpSize);
-                CameraState.lastFreeState = freeCamera.getCameraState(CameraState.lastFreeState);
+                CameraState.lastFreeState = freeCamera.getCameraState(mainScene, orbitCamera, freeCamera, CameraState.lastFreeState);
                 onAfterCameraHasMoved.next();
             }
         }
 
         if (lerpTime === 1) {
-            this.endInterpolate(lerpTarget);
+            this.endInterpolate(lerpTarget, mainScene, orbitCamera, freeCamera);
             return;
         }
     }
@@ -225,15 +224,15 @@ export class FreeCameraState extends CameraState {
 declare module '@babylonjs/core/Cameras/freeCamera.js' {
 
     interface FreeCamera {
-        getCameraState(state?: FreeCameraState): FreeCameraState;
+        getCameraState(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, state?: FreeCameraState): FreeCameraState;
         setCameraState(state: CameraState): void;
-        interpolateTo(target: CameraTarget, mainScene: Scene): Promise<string>;
-        setTargetWithOffsetRotation(target: Vector3, offsetRotation: Vector3): void;
+        interpolateTo(target: CameraTarget, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string>;
+        setTargetWithOffsetRotation(target: Vector3, offsetRotation: Vector3, freeCamera: FreeCamera): void;
     }
 }
 
-FreeCamera.prototype.getCameraState = function(this: FreeCamera, state?: FreeCameraState): FreeCameraState {
-    state = state ? state : new FreeCameraState();
+FreeCamera.prototype.getCameraState = function(this: FreeCamera, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, state?: FreeCameraState): FreeCameraState {
+    state = state ? state : new FreeCameraState(mainScene, orbitCamera, freeCamera);
 
     state.position = this._position.clone();
     state.fov = this.fov;
@@ -255,15 +254,15 @@ FreeCamera.prototype.setCameraState = function(this: FreeCamera, state: CameraSt
     this.setTarget(state.target.clone());
 };
 
-FreeCamera.prototype.interpolateTo = function(this: FreeCamera, target: CameraTarget, mainScene: Scene): Promise<string> {
+FreeCamera.prototype.interpolateTo = function(this: FreeCamera, target: CameraTarget, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string> {
     if (!(mainScene.activeCamera instanceof FreeCamera)) {
         console.error('Attempting to interpolate inactive camera');
         setActiveCamera(this, mainScene);
     }
-    return this.getCameraState().interpolateTo(target);
+    return this.getCameraState(mainScene, orbitCamera, freeCamera).interpolateTo(target, mainScene, orbitCamera, freeCamera);
 };
 
-FreeCamera.prototype.setTargetWithOffsetRotation = function(target: Vector3, offsetRotation: Vector3): void {
+FreeCamera.prototype.setTargetWithOffsetRotation = function(target: Vector3, offsetRotation: Vector3, freeCamera: FreeCamera): void {
     this.upVector.normalize();
 
     this._initialFocalDistance = target.subtract(this.position).length();
@@ -274,6 +273,8 @@ FreeCamera.prototype.setTargetWithOffsetRotation = function(target: Vector3, off
 
     this._referencePoint.normalize().scaleInPlace(this._initialFocalDistance);
 
+    //TODO: Remove this ts-ignore
+    // @ts-ignore
     Matrix.LookAtLHToRef(this.position, target, this._defaultUp, this._camMatrix);
     this._camMatrix.invert();
 

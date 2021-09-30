@@ -39,7 +39,7 @@ export const onChangeToOrbitMode: Subject<void> = new Subject<void>();
 export const onChangeToFreeMode: Subject<void> = new Subject<void>();
 
 function initialize(mainScene: Scene) {
-  setActiveCameraActive.subscribe((value) => {
+  setActiveCameraActive.subscribe((value: boolean) => {
     if (value) {
       mainScene!.activeCamera?.attachControl(true);
     } else {
@@ -161,7 +161,7 @@ export function setOrbitCameraRadius(value: boolean, mainScene: Scene) {
   orbitCamera.lowerRadiusLimit = value ? defaultLowerRadiusLimit : 1;
 }
 
-export function changeToFreeMode(targetPosition: Vector3, mainScene: Scene): void {
+export function changeToFreeMode(targetPosition: Vector3, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void {
 
   if (mainScene.activeCamera instanceof ArcRotateCamera) {
 
@@ -171,14 +171,14 @@ export function changeToFreeMode(targetPosition: Vector3, mainScene: Scene): voi
     const distance = FreeCameraState.virtualTargetDistance;
     position = position.multiplyByFloats(distance, distance, distance);
 
-    const freeCameraState: FreeCameraState = freeCamera.getCameraState();
+    const freeCameraState: FreeCameraState = freeCamera.getCameraState(mainScene, orbitCamera, freeCamera);
 
     freeCameraState.position = targetPosition.clone();
     freeCameraState.target = targetPosition.clone().add(position);
     freeCameraState.fov = freeCameraFov;
     onChangeToFreeMode.next();
 
-    mainScene.activeCamera!.interpolateTo({ cameraState: freeCameraState }).catch(() => { });
+    mainScene.activeCamera!.interpolateTo({ cameraState: freeCameraState }, mainScene, orbitCamera, freeCamera).catch(() => { });
   }
 }
 

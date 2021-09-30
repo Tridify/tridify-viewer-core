@@ -26,7 +26,7 @@ export class TridifyPbrMaterial extends PBRMaterial {
 
   private bimColorsToReplaceTotal: number = 0;
 
-  private singleReplacementColor: Nullable<Color4>;
+  private singleReplacementColor: Nullable<Color4> = null;
 
   private bimIndicesOpacityTexture: Nullable<RawTexture> = null;
 

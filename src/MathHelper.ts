@@ -88,7 +88,7 @@ export function normalizeAngle(angle: number): number {
 declare global {
     interface DataView {
         getUint24(pos: number): number;
-        setUint24(pos: number, val: number);
+        setUint24(pos: number, val: number): void;
     }
 }
 
@@ -401,7 +401,7 @@ Color4.prototype.toUInt32 = function(): number {
  * @param value - An unsigned 24 bit integer
  * @returns integer encoded to a Color3
  */
-Color3.prototype.fromUInt24 = function(value: number): Color4 {
+/*Color3.prototype.fromUInt24 = function(value: number): Color4 {
 
     if (value > 16777215) {
         throw new Error('The given value is overflowing the uInt24 range');
@@ -414,7 +414,7 @@ Color3.prototype.fromUInt24 = function(value: number): Color4 {
     this.b = view.getUint8(2);
 
     return this;
-};
+};*/
 
 /**
  * convert a Color3 uint8 array to an unsigned 24 bit integer
@@ -443,7 +443,7 @@ Color4.prototype.toGLSL = function(this): string {
 export function dateToIsoString(date: Date): string {
     const tzo = -date.getTimezoneOffset();
     const dif = tzo >= 0 ? '+' : '-';
-    const pad = function(num) {
+    const pad = function(num: number) {
         const norm = Math.floor(Math.abs(num));
         return (norm < 10 ? '0' : '') + norm;
     };

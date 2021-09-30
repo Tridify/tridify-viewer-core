@@ -19,6 +19,8 @@ import {
 } from '@babylonjs/core';
 import { GLTFFileLoader } from '@babylonjs/loaders';
 import { uniq } from 'lodash';
+import { ExtrasAsMetadata, EXT_mesh_gpu_instancing, GLTFLoader, KHR_materials_pbrSpecularGlossiness } from '@babylonjs/loaders/glTF/2.0';
+import { TridifyPbrMaterial } from './tridifyMaterial';
 
 /**
  * Frame scene. First it calculates the radius of the entire scene.
@@ -78,7 +80,7 @@ export function getMaxBoundingDistanceFromOrigo(meshes: AbstractMesh[]): number 
  * @returns {Promise<GltfModel>} - The bounding distance from origo.
  */
  export async function loadMeshGltf(scene: Scene, allGltfFiles: string[]): Promise<GltfModel> {
-  
+  SceneLoader.RegisterPlugin(new GLTFFileLoader());
   const mergedMeshesNode = new TransformNode('MergedMeshes', scene);
 
   await Promise.all(allGltfFiles.map(url => SceneLoader.AppendAsync('', url, scene)));
@@ -352,6 +354,8 @@ FileTools.RequestFile = (url: string, onSuccess: (data: string | ArrayBuffer, re
   return requestFileBase(url, onSuccess, wrappedProgress, offlineProvider, useArrayBuffer, onError, onOpened);
 };
 
+
+
 /**
  * Import Tridify Models with IFC data added into meshes.
  * @param {Scene} scene - The Babylon scene to import meshes.
@@ -362,7 +366,13 @@ FileTools.RequestFile = (url: string, onSuccess: (data: string | ArrayBuffer, re
  * @param {any} subTrackers - Optional - This is used to handle loading phase.
  */
 export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], linkedFilesMap: Map<string, string> = new Map(), ifcIdByFilename: Map<string, string> = new Map(), getModelOffset?: (vector: Vector3) => void, subTrackers?: any): Promise<TransformNode> {
-
+  SceneLoader.RegisterPlugin(new GLTFFileLoader());
+  GLTFLoader.RegisterExtension("ExtrasAsMetadata", (loader) => new ExtrasAsMetadata(loader));
+  GLTFLoader.RegisterExtension("KHR_materials_pbrSpecularGlossiness", (loader) => new KHR_materials_pbrSpecularGlossiness(loader));
+  GLTFLoader.RegisterExtension("EXT_mesh_gpu_instancing", (loader) => new EXT_mesh_gpu_instancing(loader));
+  //GLTFLoader.RegisterExtension('TridifyMaterialLoader', (loader) => { return new TridifyMaterialLoader(loader); });
+  
+  
   // Buffer binary files do not show in in progress total until they are requested
   // so an estimate of 1GB per file is used until the main file is parsed
   let parsed = false;
@@ -388,7 +398,7 @@ export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], 
   await Promise.all(allGltfFiles.map(url => SceneLoader.AppendAsync('', url, scene, progress => {
     const totalProgress = parsed ? progress.total : progress.total  + linkedFilesSizeEstimate;
     if(subTrackers) subTrackers.importModels.UpdateProgress((progress.loaded / totalProgress) * 1.05);
-  })));
+  }, ".glb")));
 
   let extras: { centeringOffset: any, ifc: [] } = { centeringOffset: [], ifc: [] };
 
@@ -498,12 +508,19 @@ export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], 
       }
     }
 
-    // TODO: Create material copies on demand when wanting to turn a custom shader feature on for certain mesh(es)
+    mesh.isPickable = false;
+    mesh.alwaysSelectAsActiveMesh = true;
+    mesh.renderingGroupId = 1;
+    mesh.useVertexColors = false;
+    mesh.freezeWorldMatrix();
+  });
+
+  // TODO: Create material copies on demand when wanting to turn a custom shader feature on for certain mesh(es)
   scene.materials.forEach(material => {
     material.getBindedMeshes().forEach((mesh, index) => {
       const mat = material.clone(material.id + '_' + index.toString().padStart(3, '0')) as TridifyPbrMaterial;
       const specularColor = mat.reflectivityColor;
-
+      console.log("here")
       // HACK: Override default specular of 0.5 generated during mesh post-processing as it makes materials unnatural
       // TODO: This can be removed after post-processor has more sensible defaults and we expect that old links that had the 0.5 default do not exist or are not used anymore
       if (Math.abs(specularColor.r - 0.5) < 0.0001 && Math.abs(specularColor.g - 0.5) < 0.0001 && Math.abs(specularColor.b - 0.5) < 0.0001) {
@@ -515,13 +532,6 @@ export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], 
 
       mesh.material = mat;
     });
-  });
-
-    mesh.isPickable = false;
-    mesh.alwaysSelectAsActiveMesh = true;
-    mesh.renderingGroupId = 1;
-    mesh.useVertexColors = false;
-    mesh.freezeWorldMatrix();
   });
 
   if(subTrackers) subTrackers.importModels.UpdateProgress(1);

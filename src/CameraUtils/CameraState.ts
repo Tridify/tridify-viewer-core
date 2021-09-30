@@ -1,7 +1,6 @@
-import { Vector3, Quaternion, Nullable, Observer, Scene, FreeCamera, ArcRotateCamera, ISize, Camera, Scalar, BoundingSphere, Ray } from '@babylonjs/core';
-import { Viewpoint } from '@/tools/CommentingTool/Viewpoint';
+import { Vector3, Quaternion, Nullable, Observer, Scene, FreeCamera, ArcRotateCamera, ISize, Camera, Scalar, BoundingSphere, Ray, Engine } from '@babylonjs/core';
 import { ArcRotateCameraState } from './ArcRotateCameraState';
-import { setActiveCamera, orbitCameraFov, freeCameraFov, onChangeToOrbitMode, onChangeToFreeMode, freeCameraMinZ, orbitCameraMinZ } from '../utils/cameraUtils';
+import { setActiveCamera, orbitCameraFov, freeCameraFov, onChangeToOrbitMode, onChangeToFreeMode, freeCameraMinZ, orbitCameraMinZ } from './cameraUtils';
 import { FreeCameraState } from './FreeCameraState';
 
 export abstract class CameraState {
@@ -14,13 +13,13 @@ export abstract class CameraState {
     public orthogonalMinZ?: number;
 
     // public associatedViewpoint?: Viewpoint;
-    protected viewWorldSize: Nullable<ISize>;
+    protected viewWorldSize: Nullable<ISize> = { width: 0, height: 0 };
 
     public abstract getQuaternion(): Quaternion;
-    public abstract clone(): CameraState;
+    public abstract clone(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): CameraState;
     // public abstract fromViewpoint(viewpoint: Viewpoint): void;
     // public abstract toViewpoint(index?: number): Viewpoint;
-    public abstract fromCameraState(cameraState: CameraState): void;
+    public abstract fromCameraState(cameraState: CameraState, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void;
     // protected abstract fillViewpoint(viewpoint: Viewpoint): Viewpoint;
 
     public static elapsedLerpTime: number = 0;
@@ -35,8 +34,8 @@ export abstract class CameraState {
     public static readonly sceneBoundsSphere: BoundingSphere;
     public static readonly pseudoOrthogonalDistanceMultiplier: number = 0;
 
-    protected abstract interpolate(target: CameraState): void;
-    public abstract interpolateToState(target: CameraState): Promise<string>;
+    protected abstract interpolate(target: CameraState, engine: Engine, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void;
+    public abstract interpolateToState(target: CameraState, engine: Engine, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string>;
 
     public abstract getClassName(): string;
 
@@ -60,7 +59,7 @@ export abstract class CameraState {
     }
 
     public setupWorldSize() {
-        if (!this.associatedViewpoint) {
+        //if (!this.associatedViewpoint) {
 
             const screenAspect = window.innerWidth / window.innerHeight;
 
@@ -78,7 +77,7 @@ export abstract class CameraState {
                 this.viewWorldSize.width = (Math.tan(this.fov / 2) * Vector3.Distance(this.position, this.target)) * 2;
                 this.viewWorldSize.height = this.viewWorldSize.width / screenAspect;
             }
-        }
+        //}
     }
 
     protected interpolateWorldSnapshotSize(lerpTarget: CameraState, lerpTime: number): Nullable<ISize> {
@@ -107,11 +106,11 @@ export abstract class CameraState {
         camera.fov = (Math.atan2(opposite, adjacent) * 2);
     }
 
-    public setupInterpolationObserver(lerpTarget: CameraState, mainScene: Scene): Promise<string> {
+    public setupInterpolationObserver(lerpTarget: CameraState, engine: Engine, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string> {
 
         return new Promise<string>((resolve, reject) => {
 
-            if (!CameraState.interpolationObserver) CameraState.interpolationObserver = mainScene.onBeforeRenderObservable.add(() => { this.interpolate(lerpTarget); });
+            if (!CameraState.interpolationObserver) CameraState.interpolationObserver = mainScene.onBeforeRenderObservable.add(() => { this.interpolate(lerpTarget, engine, mainScene, orbitCamera, freeCamera); });
 
             CameraState.interpolationObserver!.interpolationResolved = () => resolve('True');
             CameraState.interpolationObserver!.interpolationInterrupted = () => reject(`Interpolation has been interrupted`);
@@ -142,20 +141,20 @@ export abstract class CameraState {
         freeCamera.realStatePosition = undefined;
     }
 
-    public static resetFov(mainScene: Scene): void {
+    public static resetFov(mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void {
         const fov = mainScene.activeCamera?.getClassName() === 'FreeCamera' ? freeCameraFov : orbitCameraFov;
-        CameraState.interpolateTo({ fov }, mainScene).catch((err) => { console.log(err); });
+        CameraState.interpolateTo({ fov }, mainScene, orbitCamera, freeCamera).catch((err) => { console.log(err); });
     }
 
-    public static interpolateTo(target: CameraTarget, mainScene: Scene): Promise<string> {
+    public static interpolateTo(target: CameraTarget, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): Promise<string> {
         const cam = mainScene.activeCamera;
-        return (cam as any)?.getCameraState ? (cam! as FreeCamera | ArcRotateCamera).getCameraState().interpolateTo(target, mainScene) : Promise.reject(`Scene active camera has no CameraState functions for interpolation`);
+        return (cam as any)?.getCameraState ? (cam! as FreeCamera | ArcRotateCamera).getCameraState(mainScene, orbitCamera, freeCamera).interpolateTo(target, mainScene, orbitCamera, freeCamera) : Promise.reject(`Scene active camera has no CameraState functions for interpolation`);
     }
 
     public interpolateTo(target: CameraTarget, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera, debugging?: boolean): Promise<string> {
 
-        CameraState.scratchArcRotateState = new ArcRotateCameraState();
-        CameraState.scratchFreeState = new FreeCameraState();
+        CameraState.scratchArcRotateState = new ArcRotateCameraState(mainScene, orbitCamera, freeCamera);
+        CameraState.scratchFreeState = new FreeCameraState(mainScene, orbitCamera, freeCamera);
 
         CameraState.elapsedLerpTime = 0;
 
@@ -171,7 +170,7 @@ export abstract class CameraState {
         if (target.fov !== undefined) {
 
             const sceneCamera = (mainScene.activeCamera as FreeCamera | ArcRotateCamera);
-            targetState = sceneCamera?.getCameraState();
+            targetState = sceneCamera?.getCameraState(mainScene, orbitCamera, freeCamera);
             if (sceneCamera?.pseudoOrthogonalPosition && sceneCamera?.realStatePosition) {
                 targetState.position = sceneCamera?.realStatePosition;
 
@@ -180,12 +179,12 @@ export abstract class CameraState {
                 targetState.radius = Vector3.Distance(targetState.target, targetState.position);
             }
             if (sceneCamera?.pseudoOrthogonalPosition) {
-                this.resetCameras();
+                this.resetCameras(orbitCamera, freeCamera);
             }
 
             targetState.fov = target.fov;
         } else if (target.position) {
-            targetState = (mainScene.activeCamera! as FreeCamera | ArcRotateCamera)?.getCameraState();
+            targetState = (mainScene.activeCamera! as FreeCamera | ArcRotateCamera)?.getCameraState(mainScene, orbitCamera, freeCamera);
             targetState.position = target.position;
 
             const direction = Vector3.Forward().rotateDirectionByQuaternion(this.getQuaternion());
@@ -204,7 +203,7 @@ export abstract class CameraState {
             //targetState.debugCameraState();
         }
 
-        return this.interpolateToState(targetState);
+        return this.interpolateToState(targetState, mainScene.getEngine(), mainScene, orbitCamera, freeCamera);
     }
 
     protected setupConformalDollyZoomPosition(camera: Camera, targetState: CameraState): void {
@@ -239,14 +238,14 @@ export abstract class CameraState {
     protected endInterpolate(lerpTarget: CameraState, mainScene: Scene, orbitCamera: ArcRotateCamera, freeCamera: FreeCamera): void {
 
         if (!lerpTarget.pseudoOrthogonalPosition) {
-            this.resetCameras();
+            this.resetCameras(orbitCamera, freeCamera);
         }
 
         CameraState.lastFreeState = undefined;
         CameraState.lastArcRotateState = undefined;
-        CameraState.scratchArcRotateState = new ArcRotateCameraState();
-        CameraState.scratchFreeState = new FreeCameraState();
-        this.fromCameraState(lerpTarget);
+        CameraState.scratchArcRotateState = new ArcRotateCameraState(mainScene, orbitCamera, freeCamera);
+        CameraState.scratchFreeState = new FreeCameraState(mainScene, orbitCamera, freeCamera);
+        this.fromCameraState(lerpTarget, mainScene, orbitCamera, freeCamera);
 
         if (lerpTarget instanceof ArcRotateCameraState) {
             onChangeToOrbitMode.next();
