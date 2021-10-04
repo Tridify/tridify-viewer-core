@@ -11,7 +11,6 @@ import { IInspectable } from '@babylonjs/core/Misc/iInspectable';
  *
  */
 export class TridifyPbrMaterial extends PBRMaterial {
-
   //#region Properties
   /** the distance at which the material starts to fade from opaque to transparent, in meters */
   public static readonly distanceToStartFade = 3;
@@ -678,5 +677,3 @@ export class TridifyPbrMaterial extends PBRMaterial {
   }
   //#endregion
 }
-
-module.exports.TridifyPbrMaterial = TridifyPbrMaterial;

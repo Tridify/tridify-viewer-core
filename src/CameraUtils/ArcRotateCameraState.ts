@@ -4,7 +4,7 @@ import { CameraState, CameraTarget } from './CameraState';
 import { setActiveCamera, orbitCameraFov, onChangeToFreeMode, onAfterCameraHasMoved } from './cameraUtils';
 // import { Viewpoint, PerspectiveCamera } from '@/tools/CommentingTool/Viewpoint';
 import { v4 as uuidV4 } from 'uuid';
-import { normalizeAngle, easeIn, easeOut, easeInQuint, easeOutQuint } from '../mathHelper';
+import { normalizeAngle, easeIn, easeOut, easeInQuint, easeOutQuint } from '../MathHelper';
 export class ArcRotateCameraState extends CameraState {
 
     public alpha: number = 0;

@@ -4,7 +4,7 @@ import { CameraState, CameraTarget } from './CameraState';
 import { setActiveCamera, freeCameraFov, onChangeToOrbitMode, onChangeToFreeMode, onAfterCameraHasMoved, freeCameraMinZ, orbitCameraMinZ } from './cameraUtils';
 // import { Viewpoint, PerspectiveCamera, CAMERA_TYPE } from '@/tools/CommentingTool/Viewpoint';
 // import { v4 as uuidV4 } from 'uuid';
-import { easeIn, easeInQuint, easeOutQuint } from '../mathHelper';
+import { easeIn, easeInQuint, easeOutQuint } from '../MathHelper';
 export class FreeCameraState extends CameraState {
 
     public position: Vector3 = Vector3.Zero();

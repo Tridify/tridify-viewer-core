@@ -35,7 +35,6 @@ import { TridifyPbrMaterial } from './TridifyMaterials/tridifyMaterial';
  * @param {number} minOrbitZoom - Optional - the minimum distance that the camera can zoom to to the center of the model. If missing, third of diameter.
  */
 export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], collisionMesh?: AbstractMesh, minOrbitZoom?: number) {
-
   if (orbitCamera === undefined) {
     try {
       orbitCamera = scene.activeCamera as ArcRotateCamera;
@@ -169,8 +168,8 @@ export function createOrbitCamera(targetScene: Scene): ArcRotateCamera {
     return meshesWithinDeviation.length > 0 ? meshesWithinDeviation : meshes;
   }
 
- 
-  
+
+
 /**
  * Load model ConversioData based from a Tridify model hash
  * @param {string} shareKey - model hash
@@ -204,13 +203,13 @@ export async function fetchSharedConversions(shareKey: string): Promise<SharedCo
         newMat.diffuseColor = meshmat.albedoColor;
         const pbr: any = PBRMaterial.Parse(serialized, scene, '')
         pbr.twoSidedLighting = true;
-  
+
         if(mesh.material instanceof PBRMaterial) {
           pbr.albedoColor = mesh.material.albedoColor;
           pbr.useAlphaFromAlbedoTexture = true;
           pbr.metallic = 0;
         }
-  
+
         if(mesh instanceof Mesh) {
           mesh.material = pbr
         }
@@ -227,7 +226,7 @@ export async function fetchSharedConversions(shareKey: string): Promise<SharedCo
     PostProcessState: string; // TODO: Change to enum
     PostProcessedFiles: string[];
   }
-  
+
   interface SharedConversionDTO {
     Hash: string;
     Files: SharedConversionFileDTO[];
@@ -255,7 +254,7 @@ export async function fetchSharedConversions(shareKey: string): Promise<SharedCo
     CombinationVisibilityTool: boolean;
     CommentingTool: boolean;
   }
-  
+
   interface SharedConversionFileDTO {
     Url: string;
     Type: string;   // It is ifc group
@@ -289,7 +288,7 @@ export async function fetchSharedConversions(shareKey: string): Promise<SharedCo
     ifcStorey: string;
     ifcType: string;
   }
-  
+
   interface PostProcessedMeshData {
     ifcGuid: string;
     ifcType: string;
@@ -371,7 +370,7 @@ export async function loadTridifyMeshGltf(scene: Scene, allGltfFiles: string[], 
   GLTFLoader.RegisterExtension("KHR_materials_pbrSpecularGlossiness", (loader) => new KHR_materials_pbrSpecularGlossiness(loader));
   GLTFLoader.RegisterExtension("EXT_mesh_gpu_instancing", (loader) => new EXT_mesh_gpu_instancing(loader));
   GLTFLoader.RegisterExtension("TridifyMaterialLoader", (loader) => new TridifyMaterialLoader(loader));
-  
+
   // Buffer binary files do not show in in progress total until they are requested
   // so an estimate of 1GB per file is used until the main file is parsed
   let parsed = false;
@@ -563,4 +562,4 @@ function TridifyMaterialLoader(this, loader) {
   };
 }
 
-module.exports = {TridifyPbrMaterial}
+export { TridifyPbrMaterial };
