@@ -9,7 +9,13 @@ import {uInt8ToMinifloat,easeIn,easeRot,easeOut,easeInQuint,easeOutQuint,
 } from './mathhelpfuncitons';
 //import { TridifyPbrMaterialInspectableProperties } from './TridifyPbrMaterialInspectableProperties';
 
+import {pinchActive, onStartedPinch, onPinch, onEndedPinch,
+  onPointerDown, onPointerUp, onCursorDragged, onTapped, onCursorMoved,
+  initializeTouches} from './touchUtils';
 //export { TridifyPbrMaterial };
+export {pinchActive, onStartedPinch, onPinch, onEndedPinch,
+  onPointerDown, onPointerUp, onCursorDragged, onTapped, onCursorMoved,
+  initializeTouches}
 export { loadTridifyMeshGltf };
 export { uInt8ToMinifloat,easeIn,easeRot,easeOut,easeInQuint,easeOutQuint,
   isInt,getSinePhase,normalizeAngle,normalFromFacetPositions,getProjectedPosition,
