@@ -1,8 +1,9 @@
 // Blue-noise texture from Christoph Peters http://momentsingraphics.de/BlueNoise.html Creative Commons CC0 Public Domain Dedication
 import { Scene, PBRMaterial, Effect, Nullable, SerializationHelper, BaseTexture, Texture, Color4, VertexBuffer, Constants, MaterialDefines, Material, RawTexture } from '@babylonjs/core';
-import { onChangeToOrbitMode, onChangeToFreeMode, onAfterCameraStoppedMoving } from '../CameraUtils/cameraUtils';
-import { TridifyPbrMaterialInspectableProperties } from '../TridifyPbrMaterialInspectableProperties';
+//import { onChangeToOrbitMode, onChangeToFreeMode, onAfterCameraStoppedMoving } from '../CameraUtils/cameraUtils';
+//import { TridifyPbrMaterialInspectableProperties } from './TridifyPbrMaterialInspectableProperties';
 import { IInspectable } from '@babylonjs/core/Misc/iInspectable';
+import { mathClamp } from '../mathhelpfuncitons';
 
 /**
  * A PBR material that has the following modifications:
@@ -10,13 +11,13 @@ import { IInspectable } from '@babylonjs/core/Misc/iInspectable';
  * If 'shouldFadeByProximity' is set to true, the material dither-fades when approached by the camera.
  *
  */
-export class TridifyPbrMaterial extends PBRMaterial {
+/*export*/ class TridifyPbrMaterial extends PBRMaterial {
   //#region Properties
   /** the distance at which the material starts to fade from opaque to transparent, in meters */
   public static readonly distanceToStartFade = 3;
 
   /** the lowest possible fade value to show with proximity blue noise fading. 0 is fully transparent. 1 is fully opaque */
-  public static readonly lowestProximityAlpha = Math.clamp(0.4, 0, 1);
+  public static readonly lowestProximityAlpha = mathClamp(0.4, 0, 1);
   private static blueNoiseTexture: Nullable<BaseTexture> = null;
 
   private static defaultReplacementColor: Color4 = new Color4(1, 0, 1, 1);
@@ -71,13 +72,13 @@ export class TridifyPbrMaterial extends PBRMaterial {
   }
 
   public setupProximityTransparency() {
-    onChangeToOrbitMode.subscribe(() => {
+    /*onChangeToOrbitMode.subscribe(() => {
       if (this.canFadeByProximity) this.setProximityFade(false);
-    });
+    });*/
 
-    onChangeToFreeMode.subscribe(() => {
+    /*onChangeToFreeMode.subscribe(() => {
       if (this.canFadeByProximity) this.setProximityFade(true);
-    });
+    });*/
   }
 
   public getActiveTextures(): BaseTexture[] {
@@ -167,7 +168,7 @@ export class TridifyPbrMaterial extends PBRMaterial {
       }
     }
 
-    return outputOpacity.map(opacity => Math.clamp(opacity, 0, 1));
+    return outputOpacity.map(opacity => mathClamp(opacity, 0, 1));
   }
 
   //#endregion
@@ -407,11 +408,11 @@ export class TridifyPbrMaterial extends PBRMaterial {
       this.createShader();
     }
 
-    onAfterCameraStoppedMoving.subscribe(() => {
+    /*onAfterCameraStoppedMoving.subscribe(() => {
       if (this.isCurrentlyBimIndexBlending) {
         this.updateBoundMeshesOpacityOrder();
       }
-    });
+    });*/
 
     this.customShaderNameResolve = (s, uniforms, uniformBuffers, samplers, defines, attributes) => {
       defines = defines as MaterialDefines;
@@ -471,7 +472,8 @@ export class TridifyPbrMaterial extends PBRMaterial {
 
     this.setupProximityTransparency();
 
-    this.inspectableCustomProperties = TridifyPbrMaterialInspectableProperties;
+    // TODO: remove this from comment
+    this.inspectableCustomProperties = []//TridifyPbrMaterialInspectableProperties;
   }
   //#endregion
 

@@ -1,6 +1,7 @@
 
 import { Scene, Matrix, Vector3, Vector2, Color3, Color4, Quaternion, PrecisionDate, Ray, BoundingSphere, Engine } from '@babylonjs/core';
 import { DeepImmutable, Nullable } from '@babylonjs/core';
+// Ensure this is treated as a module.
 
 //#region Math helpers
 declare global {
@@ -29,24 +30,24 @@ declare global {
         isFloat: (str: string) => boolean;
     }
 }
-
+// TODO: check if this needed
 String.isNumeric = (str: string): boolean => {
     if (typeof str !== 'string') return false;
     return !isNaN(str as any) && !isNaN(parseFloat(str));
 };
-
+// TODO: check if this needed
 String.isFloat = (str: string): boolean => {
     return String.isNumeric(str) && str.includes('.');
 };
-
-Math.clamp = (value, min, max): number => {
+export function mathClamp(value, min, max): number {
     return Math.min(Math.max(value, min), max);
-};
-
+}
+// TODO: check if this needed
 Math.randomFloatInRange = (min: number, max: number): number => {
     return (Math.random() * (max - min + 1)) + min;
 };
 
+// TODO: check if these works fine
 Math.TAU = Math.PI * 2;
 Math.HALF_PI = Math.PI * 0.5;
 Math.mod = (dividend, divisor) => ((dividend % divisor) + divisor) % divisor;
@@ -112,8 +113,25 @@ declare module '@babylonjs/core/Culling/ray.js' {
         signedDistanceToSphereSurface(sphere: DeepImmutable<BoundingSphere>): Nullable<number>;
     }
 }
+export function signedDistanceToSphereSurface(ray: Ray, sphere: DeepImmutable<BoundingSphere>): Nullable<number> {
+    const sphereRadius = sphere.radiusWorld;
 
-Ray.prototype.signedDistanceToSphereSurface = function(this: Ray, sphere: DeepImmutable<BoundingSphere>): Nullable<number> {
+    const rayOffsetFromCenter = sphere.centerWorld.subtract(ray.origin);
+
+    const rayToCenterDistance = rayOffsetFromCenter.length();
+
+    const rayToCenterAlongRayDistance = Vector3.Dot(rayOffsetFromCenter, ray.direction);
+    const rayToSurfaceDistance = rayToCenterDistance - rayToCenterAlongRayDistance;
+    const surfaceToCenterAlongRayDistance = sphereRadius - rayToSurfaceDistance;
+
+    if (sphereRadius - rayToCenterDistance + rayToCenterAlongRayDistance < surfaceToCenterAlongRayDistance) {
+        return null;
+    }
+
+    return rayToCenterAlongRayDistance - surfaceToCenterAlongRayDistance;
+}
+
+/*Ray.prototype.signedDistanceToSphereSurface = function(this: Ray, sphere: DeepImmutable<BoundingSphere>): Nullable<number> {
     const sphereRadius = sphere.radiusWorld;
 
     const rayOffsetFromCenter = sphere.centerWorld.subtract(this.origin);
@@ -129,7 +147,7 @@ Ray.prototype.signedDistanceToSphereSurface = function(this: Ray, sphere: DeepIm
     }
 
     return rayToCenterAlongRayDistance - surfaceToCenterAlongRayDistance;
-};
+};*/
 
 
 //#endregion
@@ -155,26 +173,31 @@ declare module '@babylonjs/core/Maths/math.vector.js' {
     }
 }
 
-Quaternion.prototype.difference = function(this: Quaternion, that: Quaternion): Quaternion {
+export function quaternionDifference(thisQuaternion: Quaternion, thatQuaternion: Quaternion): Quaternion {
+    let result = Quaternion.Identity();
+    result = thisQuaternion.multiply(Quaternion.InverseToRef(thatQuaternion, result));
+    return result;
+}
+/*Quaternion.prototype.difference = function(this: Quaternion, that: Quaternion): Quaternion {
     let result = Quaternion.Identity();
     result = this.multiply(Quaternion.InverseToRef(that, result));
     return result;
-};
+};*/
 
-Quaternion.prototype.rotateDirection = function(this: Quaternion, direction: Vector3): Vector3 {
+export function rotateDirection(quaternion: Quaternion, direction: Vector3): Vector3 {
 
-    const num1 = this.x * 2;
-    const num2 = this.y * 2;
-    const num3 = this.z * 2;
-    const num4 = this.x * num1;
-    const num5 = this.y * num2;
-    const num6 = this.z * num3;
-    const num7 = this.x * num2;
-    const num8 = this.x * num3;
-    const num9 = this.y * num3;
-    const num10 = this.w * num1;
-    const num11 = this.w * num2;
-    const num12 = this.w * num3;
+    const num1 = quaternion.x * 2;
+    const num2 = quaternion.y * 2;
+    const num3 = quaternion.z * 2;
+    const num4 = quaternion.x * num1;
+    const num5 = quaternion.y * num2;
+    const num6 = quaternion.z * num3;
+    const num7 = quaternion.x * num2;
+    const num8 = quaternion.x * num3;
+    const num9 = quaternion.y * num3;
+    const num10 = quaternion.w * num1;
+    const num11 = quaternion.w * num2;
+    const num12 = quaternion.w * num3;
 
     const vector = Vector3.Zero();
     vector.x = (1 - (num5 + num6)) * direction.x + (num7 - num12) * direction.y + (num8 + num11) * direction.z;
@@ -204,8 +227,7 @@ declare module '@babylonjs/core/Maths/math.vector.js' {
     }
 }
 
-Vector3.prototype.rotateDirectionByQuaternion = function(this: Vector3, quaternion: Quaternion): Vector3 {
-
+export function rotateDirectionByQuaternion(vector: Vector3, quaternion: Quaternion): Vector3 {
     const num1 = quaternion.x * 2;
     const num2 = quaternion.y * 2;
     const num3 = quaternion.z * 2;
@@ -219,16 +241,16 @@ Vector3.prototype.rotateDirectionByQuaternion = function(this: Vector3, quaterni
     const num11 = quaternion.w * num2;
     const num12 = quaternion.w * num3;
 
-    const x = this.x;
-    const y = this.y;
-    const z = this.z;
+    const x = vector.x;
+    const y = vector.y;
+    const z = vector.z;
 
-    this.x = (1 - (num5 + num6)) * x + (num7 - num12) * y + (num8 + num11) * z;
-    this.y = (num7 + num12) * x + (1.0 - (num4 + num6)) * y + (num9 - num10) * z;
-    this.z = (num8 - num11) * x + (num9 + num10) * y + (1 - (num4 + num5)) * z;
+    vector.x = (1 - (num5 + num6)) * x + (num7 - num12) * y + (num8 + num11) * z;
+    vector.y = (num7 + num12) * x + (1.0 - (num4 + num6)) * y + (num9 - num10) * z;
+    vector.z = (num8 - num11) * x + (num9 + num10) * y + (1 - (num4 + num5)) * z;
 
-    return this;
-};
+    return vector;
+}
 
 /**
  * Return the normal of the facet from facet vertex positions
@@ -368,34 +390,33 @@ const isLittleEndian = true; // Setting to littleEndian for prettier debugging
  * @param value - An unsigned 32 bit integer
  * @returns integer encoded to a Color3
  */
-Color4.prototype.fromUInt32 = function(value: number): Color4 {
-
+export function fromUInt32Color4(color: Color4, value: number): Color4 {
     const buffer = new ArrayBuffer(4);
     const view = new DataView(buffer);
     view.setUint32(0, value, isLittleEndian);
 
-    this.r = view.getUint8(0);
-    this.g = view.getUint8(1);
-    this.b = view.getUint8(2);
-    this.a = view.getUint8(3);
+    color.r = view.getUint8(0);
+    color.g = view.getUint8(1);
+    color.b = view.getUint8(2);
+    color.a = view.getUint8(3);
 
-    return this;
-};
+    return color;
+}
 
 /**
  * convert a Color3 uint8 array to an unsigned 32 bit integer
  * @returns number that is limited to an unsigned 32 bit integer size
  */
-Color4.prototype.toUInt32 = function(): number {
-
+export function color4toUInt32(color: Color4): number {
     const buffer = new ArrayBuffer(4);
     const view = new DataView(buffer);
-    view.setUint8(0, this.r);
-    view.setUint8(1, this.g);
-    view.setUint8(2, this.b);
-    view.setUint8(3, this.a);
+    view.setUint8(0, color.r);
+    view.setUint8(1, color.g);
+    view.setUint8(2, color.b);
+    view.setUint8(3, color.a);
     return view.getUint32(0, isLittleEndian);
-};
+}
+
 /**
  * convert an unsigned 24 bit integer to a Color3 uInt8 array
  * @param value - An unsigned 24 bit integer
@@ -420,23 +441,23 @@ Color4.prototype.toUInt32 = function(): number {
  * convert a Color3 uint8 array to an unsigned 24 bit integer
  * @returns number that is limited to an unsigned 24 bit integer size
  */
-Color3.prototype.toUInt24 = function(): number {
-
+export function color3toUInt24(color: Color3): number {
     const buffer = new ArrayBuffer(3);
     const view = new DataView(buffer);
-    view.setUint8(0, this.r);
-    view.setUint8(1, this.g);
-    view.setUint8(2, this.b);
+    view.setUint8(0, color.r);
+    view.setUint8(1, color.g);
+    view.setUint8(2, color.b);
     return view.getUint24(0);
+}
+
+export function color3toGLSL(color: Color3): string {
+    return `vec3 (${color.r}., ${color.g}., ${color.b}.)`;
 };
 
-Color3.prototype.toGLSL = function(this): string {
-    return `vec3 (${this.r}., ${this.g}., ${this.b}.)`;
-};
+export function color4toGLSL(color: Color4): string {
+    return `vec4 (${color.r}., ${color.g}., ${color.b}., ${color.a}.)`;
+}
 
-Color4.prototype.toGLSL = function(this): string {
-    return `vec4 (${this.r}., ${this.g}., ${this.b}., ${this.a}.)`;
-};
 //#endregion
 
 //#region Date helpers
@@ -458,5 +479,4 @@ export function dateToIsoString(date: Date): string {
         ':' + pad(tzo % 60);
 }
 //#endregion
-
 
