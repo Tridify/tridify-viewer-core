@@ -20,7 +20,7 @@ import {
 import { GLTFFileLoader } from '@babylonjs/loaders';
 import { uniq } from 'lodash';
 import { ExtrasAsMetadata, EXT_mesh_gpu_instancing, GLTFLoader, KHR_materials_pbrSpecularGlossiness } from '@babylonjs/loaders/glTF/2.0';
-import { TridifyPbrMaterial } from './tridifyMaterial';
+import { TridifyPbrMaterial } from './TridifyMaterials/tridifyMaterial';
 
 /**
  * Frame scene. First it calculates the radius of the entire scene.
@@ -555,7 +555,6 @@ function TridifyMaterialLoader(this, loader) {
   this.createMaterial = function(context, material, babylonDrawMode) {
     material = new TridifyPbrMaterial(material.name, loader.babylonScene);
     material.sideOrientation = Material.CounterClockWiseSideOrientation;
-    console.log("here22")
     if (material.alpha < 1.0) {
       material.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
     }
@@ -563,3 +562,5 @@ function TridifyMaterialLoader(this, loader) {
     return material;
   };
 }
+
+module.exports = {TridifyPbrMaterial}

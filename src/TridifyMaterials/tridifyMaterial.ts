@@ -1,7 +1,7 @@
 // Blue-noise texture from Christoph Peters http://momentsingraphics.de/BlueNoise.html Creative Commons CC0 Public Domain Dedication
 import { Scene, PBRMaterial, Effect, Nullable, SerializationHelper, BaseTexture, Texture, Color4, VertexBuffer, Constants, MaterialDefines, Material, RawTexture } from '@babylonjs/core';
-import { onChangeToOrbitMode, onChangeToFreeMode, onAfterCameraStoppedMoving } from './CameraUtils/cameraUtils';
-import { TridifyPbrMaterialInspectableProperties } from './TridifyPbrMaterialInspectableProperties';
+import { onChangeToOrbitMode, onChangeToFreeMode, onAfterCameraStoppedMoving } from '../CameraUtils/cameraUtils';
+import { TridifyPbrMaterialInspectableProperties } from '../TridifyPbrMaterialInspectableProperties';
 import { IInspectable } from '@babylonjs/core/Misc/iInspectable';
 
 /**
@@ -678,3 +678,5 @@ export class TridifyPbrMaterial extends PBRMaterial {
   }
   //#endregion
 }
+
+module.exports.TridifyPbrMaterial = TridifyPbrMaterial;
