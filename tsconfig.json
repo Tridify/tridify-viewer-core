@@ -1,11 +1,16 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "module": "esnext",
+    "module": "es2015",
+    "strict": true,
+    "downlevelIteration": true,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "jsx": "react",
+    "importHelpers": true,
     "moduleResolution": "node",
     "outDir": "dist",
     "sourceMap": true,
-    "strict": true,
     "removeComments": false,
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": false,

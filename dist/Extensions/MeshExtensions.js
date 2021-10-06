@@ -10,7 +10,7 @@ Mesh.prototype.getThinInstanceWorldMatrixAtIndex = function (index) {
 };
 Mesh.prototype.getThinInstanceColorAtIndex = function (index) {
     var _a, _b;
-    const colorBuffer = (_b = (_a = this._userThinInstanceBuffersStorage) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.color;
+    var colorBuffer = (_b = (_a = this._userThinInstanceBuffersStorage) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.color;
     if (!colorBuffer) {
         return null;
     }
