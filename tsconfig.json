@@ -11,6 +11,7 @@
     "noImplicitAny": false,
     "declaration": true,
     "experimentalDecorators": true,
+    "esModuleInterop": true,
     "lib": [
       "es5",
       "es6",
@@ -23,6 +24,9 @@
       "es2016.array.include",
       "esnext",
       "esnext.asynciterable"
-    ],
-  }
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
 }
