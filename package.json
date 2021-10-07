@@ -1,7 +1,7 @@
 {
-  "name": "@tridify/babylonjs-core",
-  "version": "0.2.0-alpha",
-  "description": "Babylonjs utilities that help working with Tridify IFC files",
+  "name": "@tridify/viewer-core",
+  "version": "0.3.0-alpha",
+  "description": "Core library for building IFC viewers on top of Tridify and Babylon JS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -15,7 +15,7 @@
     "type": "git",
     "url": "git+https://github.com/Tridify/babylonjs-utilities.git"
   },
-  "author": "“tridify” (https://www.tridify.com/)",
+  "author": "Tridify Ltd. (https://www.tridify.com/)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Tridify/babylonjs-utilities/issues"
