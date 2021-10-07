@@ -1,7 +1,7 @@
 {
-  "name": "@tridify/babylonjs-utilities",
-  "version": "0.1.3",
-  "description": "Babylonjs utilities that help working with Tridify IFC files",
+  "name": "@tridify/viewer-core",
+  "version": "0.3.0-alpha",
+  "description": "Core library for building IFC viewers on top of Tridify and Babylon JS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,23 +9,27 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc & tsc --target es6"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Tridify/babylonjs-utilities.git"
   },
-  "author": "“tridify” (https://www.tridify.com/)",
+  "author": "Tridify Ltd. (https://www.tridify.com/)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Tridify/babylonjs-utilities/issues"
   },
   "homepage": "https://github.com/Tridify/babylonjs-utilities#readme",
-  "dependencies": {
+  "peerDependencies": {
     "@babylonjs/core": "^4.2.0",
-    "@babylonjs/loaders": "^4.2.0"
+    "@babylonjs/loaders": "^4.2.0",
+    "lodash": "^4.17.20"
   },
   "devDependencies": {
+    "@babylonjs/core": "^4.2.0",
+    "@babylonjs/loaders": "^4.2.0",
+    "lodash": "^4.17.20",
     "tslib": "^1.13.0",
     "typescript": "^3.9.7"
   }
