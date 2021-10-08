@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Tridify/babylonjs-utilities.git"
+    "url": "git+https://github.com/Tridify/tridify-viewer-core.git"
   },
   "author": "Tridify Ltd. (https://www.tridify.com/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Tridify/babylonjs-utilities/issues"
+    "url": "https://github.com/Tridify/tridify-viewer-core/issues"
   },
-  "homepage": "https://github.com/Tridify/babylonjs-utilities#readme",
+  "homepage": "https://github.com/Tridify/tridify-viewer-core#readme",
   "peerDependencies": {
     "@babylonjs/core": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
