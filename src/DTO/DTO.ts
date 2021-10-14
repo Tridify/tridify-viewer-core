@@ -18,8 +18,8 @@ export interface SharedConversionFileDTO {
   Type: string;
   Format: string;
   Storey: string;
-  overLay: boolean;
-  GUID: string;
+  Overlay: boolean;
+  Guid: string;
   FileName: string | undefined; // undefined for old conversions
 }
 
