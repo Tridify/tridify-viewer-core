@@ -15,7 +15,7 @@ FileTools.RequestFile = function (url, onSuccess, onProgress, offlineProvider, u
         var req = event.target;
         if (!event.lengthComputable && event.total === 0 && (req === null || req === void 0 ? void 0 : req.getResponseHeader('Content-Encoding')) === 'gzip') {
             // Multiply gltfContentLength so it is closer to the loaded length in Chrome.
-            // uncompressed size could be sent in custom header
+            // TODO: Uncompressed size could be sent in custom header
             var reqTotal = parseInt((_a = req === null || req === void 0 ? void 0 : req.getResponseHeader('Content-Length')) !== null && _a !== void 0 ? _a : '4000000', 10) * 4;
             onProgress({
                 loaded: event.loaded,
@@ -32,14 +32,15 @@ FileTools.RequestFile = function (url, onSuccess, onProgress, offlineProvider, u
 };
 /**
  * Download and import Tridify Models to scene with IFC data added into meshes.
- * @param {Scene} scene - The Babylon scene to import meshes to.
- * @param {string[]} gltfFileUrls - Array of glTF model URLs to import.
- * @param {AbstractMesh[]} linkedFilesMap - Optional - Helps sub-tracker to calculate loading bar right. Default value is empty new Map().
- * @param {AbstractMesh[]} ifcIdByFilename - Optional - Adds meshes ifc model id. Default value is empty new Map().
+ * @param {Scene} scene - The Babylon.js Scene to import meshes to.
+ * @param {string[]} gltfFileUrls - Array of glTF file URLs to import.
+ * @param {Map<string, string>} linkedFilesMap - Optional - Helps sub-tracker to calculate loading bar right. Default value is empty new Map().
+ * @param {Map<string, string>} ifcIdByFilename - Optional - Adds meshes ifc model id. Default value is empty new Map().
  * @param {(vector: Vector3) => void} getModelOffset - Optional - void function passing model offset.
  * @param {any} subTrackers - Optional - This is used to handle loading phase.
+ * @returns {Promise<TransformNode>} - The node in the Babylon.js Scene under which the imported meshes were added
  */
-export function loadGltfFiles(scene, gltfFileUrls, linkedFilesMap, ifcIdByFilename, getModelOffset, tridifyMat, subTrackers) {
+export function loadGltfFiles(scene, gltfFileUrls, linkedFilesMap, ifcIdByFilename, getModelOffset, subTrackers) {
     if (linkedFilesMap === void 0) { linkedFilesMap = new Map(); }
     if (ifcIdByFilename === void 0) { ifcIdByFilename = new Map(); }
     return __awaiter(this, void 0, void 0, function () {
@@ -72,7 +73,7 @@ export function loadGltfFiles(scene, gltfFileUrls, linkedFilesMap, ifcIdByFilena
                             var totalProgress = parsed ? progress.total : progress.total + linkedFilesSizeEstimate;
                             if (subTrackers)
                                 subTrackers.importModels.UpdateProgress((progress.loaded / totalProgress) * 1.05);
-                        }, ".glb"); }))];
+                        }); }))];
                 case 1:
                     _a.sent();
                     extras = { centeringOffset: [], ifc: [] };
@@ -124,19 +125,16 @@ export function loadGltfFiles(scene, gltfFileUrls, linkedFilesMap, ifcIdByFilena
                                     var instanceIfcData = extras.ifc[instance.name];
                                     if (instanceIfcData)
                                         mesh_1.instanceIfcDataByGuid.set(instance.name, instanceIfcData);
-                                    else {
+                                    else
                                         console.error("Instance " + instance.name + " " + (index + 1) + " of " + mesh_1.instances.length + " doesn't have any ifc data!");
-                                    }
                                 });
                                 meshMatrix.copyToArray(bufferMatrices_1, mesh_1.instances.length * 16);
                                 mesh_1.thinInstanceSetBuffer('matrix', bufferMatrices_1, 16, true);
                                 var meshInstanceData = extras.ifc[mesh_1.name];
-                                if (meshInstanceData) {
+                                if (meshInstanceData)
                                     mesh_1.instanceIfcDataByGuid.set(mesh_1.name, meshInstanceData);
-                                }
-                                else {
+                                else
                                     console.error("Mesh " + mesh_1.name + " with " + mesh_1.instances.length + " instances doesn't have any ifc data!");
-                                }
                                 mesh_1.ifcType = meshInstanceData ? meshInstanceData.ifcType : firstIfcType;
                                 mesh_1.ifcStorey = meshInstanceData ? meshInstanceData.ifcStorey : firstIfcStorey;
                                 var filename = getIfcFilenameForInstances(ifcNames, meshInstanceData === null || meshInstanceData === void 0 ? void 0 : meshInstanceData.ifcFilename);
