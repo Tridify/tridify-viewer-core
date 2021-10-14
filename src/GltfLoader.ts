@@ -32,7 +32,7 @@ FileTools.RequestFile = (url: string, onSuccess: (data: string | ArrayBuffer, re
     const req = event.target as XMLHttpRequest;
     if (!event.lengthComputable && event.total === 0 && req?.getResponseHeader('Content-Encoding') === 'gzip') {
       // Multiply gltfContentLength so it is closer to the loaded length in Chrome.
-      // uncompressed size could be sent in custom header
+      // TODO: Uncompressed size could be sent in custom header
       const reqTotal = parseInt(req?.getResponseHeader('Content-Length') ?? '4000000', 10) * 4;
       onProgress({
         loaded: event.loaded,
@@ -51,14 +51,15 @@ FileTools.RequestFile = (url: string, onSuccess: (data: string | ArrayBuffer, re
 
 /**
  * Download and import Tridify Models to scene with IFC data added into meshes.
- * @param {Scene} scene - The Babylon scene to import meshes to.
- * @param {string[]} gltfFileUrls - Array of glTF model URLs to import.
- * @param {AbstractMesh[]} linkedFilesMap - Optional - Helps sub-tracker to calculate loading bar right. Default value is empty new Map().
- * @param {AbstractMesh[]} ifcIdByFilename - Optional - Adds meshes ifc model id. Default value is empty new Map().
+ * @param {Scene} scene - The Babylon.js Scene to import meshes to.
+ * @param {string[]} gltfFileUrls - Array of glTF file URLs to import.
+ * @param {Map<string, string>} linkedFilesMap - Optional - Helps sub-tracker to calculate loading bar right. Default value is empty new Map().
+ * @param {Map<string, string>} ifcIdByFilename - Optional - Adds meshes ifc model id. Default value is empty new Map().
  * @param {(vector: Vector3) => void} getModelOffset - Optional - void function passing model offset.
  * @param {any} subTrackers - Optional - This is used to handle loading phase.
+ * @returns {Promise<TransformNode>} - The node in the Babylon.js Scene under which the imported meshes were added
  */
-export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linkedFilesMap: Map<string, string> = new Map(), ifcIdByFilename: Map<string, string> = new Map(), getModelOffset?: (vector: Vector3) => void, tridifyMat?: any,  subTrackers?: any): Promise<TransformNode> {
+export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linkedFilesMap: Map<string, string> = new Map(), ifcIdByFilename: Map<string, string> = new Map(), getModelOffset?: (vector: Vector3) => void,  subTrackers?: any): Promise<TransformNode> {
   SceneLoader.RegisterPlugin(new GLTFFileLoader());
   GLTFLoader.RegisterExtension("ExtrasAsMetadata", (loader) => new ExtrasAsMetadata(loader));
   GLTFLoader.RegisterExtension("KHR_materials_pbrSpecularGlossiness", (loader) => new KHR_materials_pbrSpecularGlossiness(loader));
@@ -148,6 +149,7 @@ export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linked
         const bufferMatrices = new Float32Array(16 * (mesh.instances.length + 1));
 
         mesh.instanceIfcDataByGuid = new Map();
+
         mesh.instances.forEach((instance, index) => {
           instance.name = instance.name.split('_primitive')[0];
 
@@ -155,8 +157,11 @@ export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linked
           instanceMatrix.copyToArray(bufferMatrices, index * 16);
 
           const instanceIfcData = extras.ifc[instance.name as any] as PostProcessedInstanceData;
-          if (instanceIfcData) mesh.instanceIfcDataByGuid!.set(instance.name, instanceIfcData);
-          else { console.error(`Instance ${instance.name} ${index + 1} of ${mesh.instances.length} doesn't have any ifc data!`); }
+
+          if (instanceIfcData)
+            mesh.instanceIfcDataByGuid!.set(instance.name, instanceIfcData);
+          else
+            console.error(`Instance ${instance.name} ${index + 1} of ${mesh.instances.length} doesn't have any ifc data!`);
         });
 
         meshMatrix.copyToArray(bufferMatrices, mesh.instances.length * 16);
@@ -164,11 +169,11 @@ export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linked
         mesh.thinInstanceSetBuffer('matrix', bufferMatrices, 16, true);
 
         const meshInstanceData = extras.ifc[mesh.name as any] as PostProcessedInstanceData;
-        if (meshInstanceData) {
+
+        if (meshInstanceData)
           mesh.instanceIfcDataByGuid!.set(mesh.name, meshInstanceData);
-        } else {
+        else
           console.error(`Mesh ${mesh.name} with ${mesh.instances.length} instances doesn't have any ifc data!`);
-        }
 
         mesh.ifcType = meshInstanceData ? meshInstanceData.ifcType : firstIfcType;
         mesh.ifcStorey = meshInstanceData ? meshInstanceData.ifcStorey : firstIfcStorey;
@@ -181,9 +186,11 @@ export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linked
         mesh.instances.forEach(instance => {
           instance.dispose();
         });
+
         mesh.parent = mergedMeshesNode;
       }
     });
+
     instancesRoot.dispose();
   }
 
