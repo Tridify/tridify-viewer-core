@@ -94,7 +94,7 @@ export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linked
 
     if (subTrackers)
       subTrackers.importModels.UpdateProgress((progress.loaded / totalProgress) * 1.05);
-  }, ".glb")));
+  })));
 
   let extras: { centeringOffset: any, ifc: [] } = { centeringOffset: [], ifc: [] };
 
