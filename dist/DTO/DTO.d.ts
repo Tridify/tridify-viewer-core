@@ -60,8 +60,18 @@ export interface MaterialLibraryDTO {
     materials: any[];
 }
 export interface ObjectPropertySetsDTO {
-    PropertySets: any[];
-    TypeDefinedPropertySets: any[];
+    PropertySets: [{
+        IfcPropertySingleValue: {
+            "@Name": string;
+            "@NominalValue": string;
+        };
+    }];
+    TypeDefinedPropertySets: [{
+        IfcPropertySingleValue: {
+            "@Name": string;
+            "@NominalValue": string;
+        };
+    }];
 }
 export interface IfcHierarchyDTO {
     FileName: string;
