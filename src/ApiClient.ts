@@ -1,5 +1,5 @@
 import * as localforage from 'localforage';
-import {PublishedLinkDTO} from "./DTO/DTO";
+import {IfcHierarchyDTO, MaterialLibraryDTO, ObjectPropertySetsDTO, PublishedLinkDTO} from "./DTO/DTO";
 
 localforage.config({
   name: 'floorplan-viewer'
@@ -7,17 +7,43 @@ localforage.config({
 
 export const API_BASE_URL = process.env.VUE_APP_API_URL || "https://ws.tridify.com/api";
 
+export enum PartialIfcType {
+  Types,
+  Decomposition,
+  Units,
+  Header,
+  Layers,
+  Materials
+}
+
+function partialIfcTypeToName(type: PartialIfcType): string {
+  switch (type) {
+    case PartialIfcType.Types:
+      return "types";
+    case PartialIfcType.Decomposition:
+      return "decomposition";
+    case PartialIfcType.Units:
+      return "units";
+    case PartialIfcType.Header:
+      return "header";
+    case PartialIfcType.Layers:
+      return "layers";
+    case PartialIfcType.Materials:
+      return "materials";
+  }
+}
+
 /**
  * Get the material library for a conversion from Tridify API
  * @param {string} conversionHash The shared conversion hash of the target conversion, found in the published link data
  * @returns - The material library object or null if not found or an error occurred
  */
-export async function getMaterialLibrary(conversionHash: string): Promise<any> {
+export async function getMaterialLibrary(conversionHash: string): Promise<MaterialLibraryDTO | null> {
   const url = `${API_BASE_URL}/shared/conversion/${conversionHash}/material-library`;
   const fetchConfig = {mode: 'cors'};
   const errorMessage = "Error while fetching material library";
 
-  return await fetchUrl(url, fetchConfig, errorMessage);
+  return await fetchUrl(url, fetchConfig, errorMessage) as MaterialLibraryDTO | null;
 }
 
 /**
@@ -26,12 +52,12 @@ export async function getMaterialLibrary(conversionHash: string): Promise<any> {
  * @param {string} objectGuid The GUID of the target IFC object
  * @returns - The property sets object or null if not found or an error occurred
  */
-export async function getIfcProperties(conversionHash: string, objectGuid: string): Promise<any> {
+export async function getIfcObjectPropertySets(conversionHash: string, objectGuid: string): Promise<ObjectPropertySetsDTO | null> {
   const url = `${API_BASE_URL}/shared/conversion/${conversionHash}/properties/${objectGuid}`;
   const fetchConfig = {mode: 'cors'};
   const errorMessage = "Error while fetching property sets";
 
-  return await fetchUrl(url, fetchConfig, errorMessage);
+  return await fetchUrl(url, fetchConfig, errorMessage) as ObjectPropertySetsDTO | null;
 }
 
 /**
@@ -40,12 +66,12 @@ export async function getIfcProperties(conversionHash: string, objectGuid: strin
  * @param {string} objectGuid The GUID of the target IFC object
  * @returns - The property sets object or null if not found or an error occurred
  */
-export async function getDraftIfcProperties(conversionHash: string, objectGuid: string): Promise<any> {
+export async function getDraftIfcObjectPropertySets(conversionHash: string, objectGuid: string): Promise<ObjectPropertySetsDTO | null> {
   const url = `${API_BASE_URL}/draft/${conversionHash}/properties/${objectGuid}`;
   const fetchConfig = {mode: 'cors', credentials: 'include'};
   const errorMessage = "Error while fetching draft property sets";
 
-  return await fetchUrl(url, fetchConfig, errorMessage);
+  return await fetchUrl(url, fetchConfig, errorMessage) as ObjectPropertySetsDTO | null;
 }
 
 /**
@@ -78,18 +104,18 @@ export async function getDraftPublishedLink(): Promise<PublishedLinkDTO | null> 
  * @param {string} conversionHash The shared conversion hash of the target conversion, found in the published link data
  * @returns - The IFC hierarchy as an object or null if not found or an error occurred
  */
-export async function getIfcHierarchy(conversionHash: string): Promise<any> {
-  return await fetchFromCacheOrGet(`/shared/conversion/${conversionHash}/ifc-hierarchy`);
+export async function getIfcHierarchy(conversionHash: string): Promise<IfcHierarchyDTO | null> {
+  return await fetchFromCacheOrGet(`/shared/conversion/${conversionHash}/ifc-hierarchy`) as IfcHierarchyDTO | null;
 }
 
 /**
  * Get partial IFC data by property key from Tridify API, caches the results to local storage
  * @param {string} conversionHash The shared conversion hash of the target conversion, found in the published link data
- * @param {string} ifcDataKey The key of the partial data that should be fetched, possible values are 'types', 'decomposition', 'units', 'header', 'layers' and 'materials'
+ * @param {PartialIfcType} partialIfcType The key of the partial data that should be fetched
  * @returns - The partial IFC data as an object or null if not found or an error occurred
  */
-export async function getPartialIfcData(conversionHash: string, ifcDataKey: string): Promise<any> {
-  return await fetchFromCacheOrGet(`/shared/conversion/${conversionHash}/ifc/${ifcDataKey}`);
+export async function getPartialIfcData(conversionHash: string, partialIfcType: PartialIfcType): Promise<any> {
+  return await fetchFromCacheOrGet(`/shared/conversion/${conversionHash}/ifc/${partialIfcTypeToName(partialIfcType)}`);
 }
 
 /**
