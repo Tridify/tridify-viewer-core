@@ -24,11 +24,15 @@
   "peerDependencies": {
     "@babylonjs/core": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
+    "@types/node": "^15.3.0",
+    "localforage": "^1.9.0",
     "lodash": "^4.17.20"
   },
   "devDependencies": {
     "@babylonjs/core": "^4.2.0",
     "@babylonjs/loaders": "^4.2.0",
+    "@types/node": "^15.3.0",
+    "localforage": "^1.9.0",
     "lodash": "^4.17.20",
     "tslib": "^1.13.0",
     "typescript": "^3.9.7"
