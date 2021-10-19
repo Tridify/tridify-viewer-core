@@ -45,3 +45,31 @@ export interface LinkedFileDTO {
   OriginalFileName: string;
   Url: string;
 }
+
+export interface MaterialLibraryDTO {
+  asset: { version: string, generator: string };
+  images: [{ uri: string, name: string }];
+  samplers: [{ magFilter: number, minFilter: number }];
+  textures: [{ source: number, sampler: number }];
+  materials: any[];
+}
+
+export interface ObjectPropertySetsDTO {
+  PropertySets: [{
+    IfcPropertySingleValue: {
+      "@Name": string;
+      "@NominalValue": string;
+    };
+  }];
+  TypeDefinedPropertySets: [{
+    IfcPropertySingleValue: {
+      "@Name": string;
+      "@NominalValue": string;
+    };
+  }];
+}
+
+export interface IfcHierarchyDTO {
+  FileName: string;
+  IfcProject: any;
+}
