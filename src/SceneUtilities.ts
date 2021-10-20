@@ -12,7 +12,7 @@ import { Scene, Vector3, AbstractMesh, ArcRotateCamera } from '@babylonjs/core';
  * @param {AbstractMesh[]} meshesToFrame - Optional - meshes to use for framing. If missing use all in scene.
  * @param {number} minOrbitZoom - Optional - the minimum distance that the camera can zoom to to the center of the model. If missing, third of diameter.
  */
- export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], collisionMesh?: AbstractMesh, minOrbitZoom?: number) {
+ export function frameScene(scene: Scene, orbitCamera?: ArcRotateCamera, meshesToFrame?: AbstractMesh[], collisionMesh?: AbstractMesh, minOrbitZoom?: number): void {
 
   if (orbitCamera === undefined) {
     try {
@@ -51,7 +51,7 @@ import { Scene, Vector3, AbstractMesh, ArcRotateCamera } from '@babylonjs/core';
     .map(x => x.getBoundingInfo().boundingSphere.radius + Vector3.Distance(x.absolutePosition, Vector3.Zero())));
 }
 
-function GetMeshesWithinAverageBoxCenterDeviation(meshes: AbstractMesh[]) {
+function GetMeshesWithinAverageBoxCenterDeviation(meshes: AbstractMesh[]): AbstractMesh[] {
   const boundingBoxCenters = meshes.map(x => ({center: x.getBoundingInfo().boundingBox.centerWorld, mesh: x}));
   const averagePosition = boundingBoxCenters.reduce((a, b) => a.add(b.center), Vector3.Zero()).divide(new Vector3(meshes.length, meshes.length, meshes.length));
   const averageDeviation = boundingBoxCenters.reduce((a, b) =>  a + Vector3.Distance(averagePosition, b.center) , 0) / meshes.length;
