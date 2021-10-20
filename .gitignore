@@ -66,6 +66,7 @@ firebase.json
 
 # build output
 build/
+dist/
 umd/
 .next
 
