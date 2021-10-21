@@ -105,7 +105,7 @@ export async function getDraftPublishedLink(): Promise<PublishedLinkDTO | null> 
  * @returns - The IFC hierarchy as an object or null if not found or an error occurred
  */
 export async function getIfcHierarchy(conversionHash: string): Promise<IfcHierarchyDTO | null> {
-  return await fetchFromCacheOrGet(`/shared/conversion/${conversionHash}/ifc-hierarchy`) as IfcHierarchyDTO | null;
+  return await fetchFromCacheOrGet(`${API_BASE_URL}/shared/conversion/${conversionHash}/ifc-hierarchy`) as IfcHierarchyDTO | null;
 }
 
 /**
@@ -115,7 +115,7 @@ export async function getIfcHierarchy(conversionHash: string): Promise<IfcHierar
  * @returns - The partial IFC data as an object or null if not found or an error occurred
  */
 export async function getPartialIfcData(conversionHash: string, partialIfcType: PartialIfcType): Promise<any> {
-  return await fetchFromCacheOrGet(`/shared/conversion/${conversionHash}/ifc/${partialIfcTypeToName(partialIfcType)}`);
+  return await fetchFromCacheOrGet(`${API_BASE_URL}/shared/conversion/${conversionHash}/ifc/${partialIfcTypeToName(partialIfcType)}`);
 }
 
 /**
