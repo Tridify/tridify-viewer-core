@@ -1,6 +1,6 @@
 {
   "name": "@tridify/viewer-core",
-  "version": "1.0.6",
+  "version": "2.0.1",
   "description": "Core library for building IFC viewers on top of Tridify and Babylon JS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,15 +22,15 @@
   },
   "homepage": "https://github.com/Tridify/tridify-viewer-core#readme",
   "peerDependencies": {
-    "@babylonjs/core": "^5.0.0-alpha.65",
-    "@babylonjs/loaders": "^5.0.0-alpha.65",
+    "@babylonjs/core": "5.0.0-beta.5",
+    "@babylonjs/loaders": "5.0.0-beta.5",
     "@types/node": "^15.3.0",
     "localforage": "^1.9.0",
     "lodash": "^4.17.20"
   },
   "devDependencies": {
-    "@babylonjs/core": "^5.0.0-alpha.65",
-    "@babylonjs/loaders": "^5.0.0-alpha.65",
+    "@babylonjs/core": "5.0.0-beta.5",
+    "@babylonjs/loaders": "5.0.0-beta.5",
     "@types/node": "^15.3.0",
     "localforage": "^1.9.0",
     "lodash": "^4.17.20",
