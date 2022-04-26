@@ -1,15 +1,10 @@
 import '@babylonjs/core/Engines/engine';
 import {
-  FileTools,
-  IFileRequest,
-  IOfflineProvider,
   Mesh,
-  RequestFileError,
   Scene,
   SceneLoader,
   TransformNode,
-  Vector3,
-  WebRequest
+  Vector3
 } from '@babylonjs/core';
 import { GLTFFileLoader } from '@babylonjs/loaders';
 import { uniq } from 'lodash';
@@ -20,34 +15,6 @@ import {
   KHR_materials_pbrSpecularGlossiness
 } from '@babylonjs/loaders/glTF/2.0';
 import { PostProcessedInstanceData, PostProcessedMeshData } from "./Extensions/AbstractMeshExtensions";
-
-/****
- * Override RequestFile to support progress on gzipped files with chrome
- * https://bugs.chromium.org/p/chromium/issues/detail?id=463622
- */
-const requestFileBase = FileTools.RequestFile;
-
-FileTools.RequestFile = (url: string, onSuccess: (data: string | ArrayBuffer, request?: WebRequest) => void, onProgress?: (event: ProgressEvent) => void, offlineProvider?: IOfflineProvider, useArrayBuffer?: boolean, onError?: (error: RequestFileError) => void, onOpened?: (request: WebRequest) => void): IFileRequest => {
-  const wrappedProgress = onProgress ? (event: ProgressEvent) => {
-    const req = event.target as XMLHttpRequest;
-    if (!event.lengthComputable && event.total === 0 && req?.getResponseHeader('Content-Encoding') === 'gzip') {
-      // Multiply gltfContentLength so it is closer to the loaded length in Chrome.
-      // TODO: Uncompressed size could be sent in custom header
-      const reqTotal = parseInt(req?.getResponseHeader('Content-Length') ?? '4000000', 10) * 4;
-      onProgress({
-        loaded: event.loaded,
-        lengthComputable: true,
-        total: reqTotal,
-        target: event.target,
-      } as ProgressEvent);
-    } else {
-      onProgress(event);
-    }
-  } : undefined;
-
-  return requestFileBase(url, onSuccess, wrappedProgress, offlineProvider, useArrayBuffer, onError, onOpened);
-};
-
 
 /**
  * Download and import Tridify Models to scene with IFC data added into meshes.
@@ -82,6 +49,31 @@ export async function loadGltfFiles(scene: Scene, gltfFileUrls: string[], linked
 
         return Promise.resolve(linked);
       };
+
+      /****
+       * Monkeypatch _onProgress to support progress on gzipped files with chrome
+       * https://bugs.chromium.org/p/chromium/issues/detail?id=463622
+       */
+      // @ts-ignore
+      const baseProgress = gltf._onProgress;
+      // @ts-ignore
+      gltf._onProgress =
+          function (event, requestInfo) {
+            const req = event.target as XMLHttpRequest;
+            if (!event.lengthComputable && event.total === 0 && req?.getResponseHeader('Content-Encoding') === 'gzip') {
+              // Multiply gltfContentLength so it is closer to the loaded length in Chrome.
+              // TODO: Uncompressed size could be sent in custom header
+              const reqTotal = parseInt(req?.getResponseHeader('Content-Length') ?? '4000000', 10) * 4;
+              baseProgress.call(gltf, {
+                loaded: event.loaded,
+                lengthComputable: true,
+                total: reqTotal,
+                target: event.target,
+              }, requestInfo);
+            } else {
+              baseProgress.call(gltf, event, requestInfo);
+            }
+          };
     }
   });
 
