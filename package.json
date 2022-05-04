@@ -22,15 +22,15 @@
   },
   "homepage": "https://github.com/Tridify/tridify-viewer-core#readme",
   "peerDependencies": {
-    "@babylonjs/core": "5.0.0-beta.5",
-    "@babylonjs/loaders": "5.0.0-beta.5",
+    "@babylonjs/core": "5.4.0",
+    "@babylonjs/loaders": "5.4.0",
     "@types/node": "^15.3.0",
     "localforage": "^1.9.0",
     "lodash": "^4.17.20"
   },
   "devDependencies": {
-    "@babylonjs/core": "5.0.0-beta.5",
-    "@babylonjs/loaders": "5.0.0-beta.5",
+    "@babylonjs/core": "5.4.0",
+    "@babylonjs/loaders": "5.4.0",
     "@types/node": "^15.3.0",
     "localforage": "^1.9.0",
     "lodash": "^4.17.20",
