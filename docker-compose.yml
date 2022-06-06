@@ -1,0 +1,37 @@
+version: '2.4'
+services:
+  base:
+    image: node:16.10-alpine
+    volumes:
+      - nodemodules_viewer-core:/usr/src/service/node_modules
+      - .:/usr/src/service/
+      # - /usr/local/lib/node_modules:/usr/local/lib/node_modules
+      - ../bim-viewer/node_modules/@tridify/viewer-core/dist:/usr/src/service/dist
+    working_dir: /usr/src/service/
+    env_file:
+      - .env.development
+    tty: true # Colored output with real tty
+
+  install:
+    extends:
+      service: base
+    command: npm install --omit=peer # --omit=dev  #./setup-local-core.sh
+  
+  version:
+    extends:
+      service: base
+    command: npm --version
+  
+  build:
+    extends:
+      service: base
+    command: npm run build
+  
+  link:
+    extends:
+      service: base
+    command: npm link @tridify/viewer-core
+
+volumes:
+  nodemodules_viewer-core:
+    external: true
